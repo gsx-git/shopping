@@ -58,7 +58,7 @@ const confirmLogin = () => {
   }
 
   // 调后台登录接口（路径按你实际的来）
-  request.post('xsxk/login', {          // 与示例保持一致
+  request.post('/api/user/login', {          // 与示例保持一致
     username: loginForm.username,
     password: loginForm.password
   }).then(res => {
