@@ -51,11 +51,29 @@ const handleSearch = () => {
 const loginVisible = ref(false)
 const loginForm = reactive({ username: '', password: '' })
 const confirmLogin = () => {
-    if (!loginForm.username || !loginForm.password) return ElMessage.warning('请填写完整')
-    localStorage.setItem('token', 'fake-token')
-    loginVisible.value = false
-    ElMessage.success('登录成功')
-    router.push('/user')
+  // 简单校验
+  if (!loginForm.username || !loginForm.password) {
+    ElMessage.warning('请填写完整')
+    return
+  }
+
+  // 调后台登录接口（路径按你实际的来）
+  request.post('xsxk/login', {          // 与示例保持一致
+    username: loginForm.username,
+    password: loginForm.password
+  }).then(res => {
+    if (res.code === 200) {             // 业务成功
+      ElMessage.success('登录成功')
+      localStorage.setItem('system-user', JSON.stringify(res.data)) // 存用户信息
+      loginVisible.value = false        // 关闭弹窗
+      router.push('/')                  // 跳到首页
+    } else {                            // 业务失败
+      ElMessage.error(res.msg || '登录失败')
+    }
+  }).catch(err => {                     // 网络 / 系统异常
+    console.error(err)
+    ElMessage.error('网络异常，请稍后再试')
+  })
 }
 /* 高亮下标（与 index 对应） */
 const activeIndex = ref('1')
