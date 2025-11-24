@@ -37,6 +37,7 @@ import { ref, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import request from "@/utils/request";
 
 const route = useRoute()
 const router = useRouter()
@@ -49,10 +50,10 @@ const handleSearch = () => {
 }
 
 const loginVisible = ref(false)
-const loginForm = reactive({ username: '', password: '' })
+const loginForm = reactive({ phone: '', password: '' })
 const confirmLogin = () => {
   // 简单校验
-  if (!loginForm.username || !loginForm.password) {
+  if (!loginForm.phone || !loginForm.password) {
     ElMessage.warning('请填写完整')
     return
   }
