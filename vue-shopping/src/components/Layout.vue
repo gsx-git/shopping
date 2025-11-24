@@ -22,7 +22,7 @@
 
     <el-dialog v-model="loginVisible" title="登录" width="400px" append-to-body>
         <el-form :model="loginForm" label-width="60px">
-            <el-form-item label="账号"><el-input v-model="loginForm.username" /></el-form-item>
+            <el-form-item label="手机号"><el-input v-model="loginForm.phone" /></el-form-item>
             <el-form-item label="密码"><el-input v-model="loginForm.password" type="password" /></el-form-item>
         </el-form>
         <template #footer>
@@ -59,7 +59,7 @@ const confirmLogin = () => {
 
   // 调后台登录接口（路径按你实际的来）
   request.post('/api/user/login', {          // 与示例保持一致
-    username: loginForm.username,
+    phone: loginForm.phone,
     password: loginForm.password
   }).then(res => {
     if (res.code === 200) {             // 业务成功
