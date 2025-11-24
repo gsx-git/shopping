@@ -14,7 +14,7 @@
             <el-menu-item index="1" @click="goHome">首页</el-menu-item>
             <el-menu-item index="2" @click="goCart">购物车</el-menu-item>
             <el-menu-item index="3" @click="goUser">我的</el-menu-item>
-            <el-menu-item index="4" @click="goUshop">我的店铺在这</el-menu-item>
+            <el-menu-item index="4" @click="goUshop">我的店铺</el-menu-item>
         </el-menu>
     </el-header>
 
