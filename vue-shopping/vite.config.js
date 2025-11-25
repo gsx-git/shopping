@@ -16,7 +16,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 8088,      // 想改成啥就写啥
+    port: 8055,      // 想改成啥就写啥
     host: true       // 如需局域网 IP 访问，再加 host: '0.0.0.0'
   },
 })

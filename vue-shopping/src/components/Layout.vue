@@ -59,15 +59,13 @@ const confirmLogin = () => {
   }
 
   // 调后台登录接口（路径按你实际的来）
-  request.post('/api/user/login', {          // 与示例保持一致
-    phone: loginForm.phone,
-    password: loginForm.password
-  }).then(res => {
+  request.post('/api/user/login',loginForm).then(res => {
     if (res.code === 200) {             // 业务成功
       ElMessage.success('登录成功')
-      localStorage.setItem('system-user', JSON.stringify(res.data)) // 存用户信息
       loginVisible.value = false        // 关闭弹窗
       router.push('/')                  // 跳到首页
+      localStorage.setItem('system-user', JSON.stringify(res.data)) // 存用户信息
+      console.log('当前 res.data:', res.data);
     } else {                            // 业务失败
       ElMessage.error(res.msg || '登录失败')
     }
@@ -101,7 +99,7 @@ const goHome = () => {
     router.push('/')
 }
 const goCart = () => {
-    if (localStorage.getItem('token')) router.push('/cart')
+    if (localStorage.getItem('system-user')) router.push('/cart')
     else {
         ElMessage.warning('请先登录')
         loginVisible.value = true
@@ -109,15 +107,14 @@ const goCart = () => {
 }
 const goUser = () => {
     /* 登录拦截 */
-    router.push('/user')
-    // if (localStorage.getItem('token')) 
-    // else {
-    //     ElMessage.warning('请先登录')
-    //     loginVisible.value = true
-    // }
+    if (localStorage.getItem('system-user')) router.push('/user')
+    else {
+        ElMessage.warning('请先登录')
+        loginVisible.value = true
+    }
 }
 const goUshop = () => {
-    if (localStorage.getItem('token')) router.push('/ushop')
+    if (localStorage.getItem('system-user')) router.push('/ushop')
     else {
         ElMessage.warning('请先登录')
         loginVisible.value = true

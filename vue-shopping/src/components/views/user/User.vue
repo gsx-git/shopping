@@ -3,10 +3,10 @@
         <!-- 用户信息卡片 -->
         <el-card class="user-card">
             <div class="avatar-wrap">
-                <img src="https://picsum.photos/100/100?random=888" class="avatar" />
+                <!-- <img src="https://picsum.photos/100/100?random=888" class="avatar" /> -->
                 <div class="info">
-                    <div class="name">超级买家</div>
-                    <div class="phone">138****8888</div>
+                    <div class="name">{{ user.username }}</div>
+                    <div class="phone">{{ user.phone }}</div>
                 </div>
             </div>
             <el-button type="primary" size="small" plain @click="doLogout">退出登录</el-button>
@@ -72,6 +72,10 @@ import { Location, Star, View, Service } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
+const raw = localStorage.getItem('system-user')
+const user  = raw ? JSON.parse(raw) : null        // user 可能为 null
+console.log('当前 用户页user:', user);
+
 /* 订单入口 */
 const orderTabs = [
     { label: '待付款', icon: 'el-icon-money', badge: 1 },
@@ -103,7 +107,7 @@ const handleMenu = index => {
 
 /* 退出登录 */
 const doLogout = () => {
-    localStorage.removeItem('token')
+    localStorage.removeItem('system-user')
     ElMessage.success('已退出登录')
     router.replace('/')
 }

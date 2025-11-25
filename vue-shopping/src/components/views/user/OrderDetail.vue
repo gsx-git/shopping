@@ -10,7 +10,7 @@
           </el-button>
         </div>
       </template>
-      <el-table :data="orderDetail.items" row-key="id" show-overflow-tooltip>
+      <el-table :data="orderList" row-key="id" show-overflow-tooltip>
         <el-table-column label="订单编号" width="180">
           <template #default="{ row }">{{ row.orderNumber }}</template>
         </el-table-column>
@@ -44,7 +44,7 @@
         </el-table-column>
       </el-table>
       <div class="order-total">
-        <div class="total">合计：<strong>¥{{ orderDetail.totalPrice }}</strong></div>
+        <div class="total">合计：<strong>¥{{ totalPrice }}</strong></div>
       </div>
     </el-card>
   </el-main>
@@ -54,60 +54,48 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { computed } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
+const loading = ref(true)
+const orderList = ref([])
 
-const orderDetail = ref({
-  orderNumber: '',
-  status: '',
-  date: '',
-  items: [],
-  totalPrice: 0
-})
+/* 根据 user.id 拉取订单 */
+const fetchOrders = async () => {
+  try {
+    const raw = localStorage.getItem('system-user')
+    const user = raw ? JSON.parse(raw) : null
+    console.log('当前 订单页user:', user);
+    if (!user || !user.id) {
+      ElMessage.warning('请先登录')
+      return
+    }
 
-/* 获取订单详情 */
-const fetchOrderDetail = () => {
-  const orderId = route.params.id
-  if (!orderId) {
-    ElMessage.error('订单ID无效')
-    return
-  }
-  // 模拟从后端获取订单详情
-  orderDetail.value = {
-    items: [
-      {
-        id: '1',
-        orderNumber: `ORDER-${orderId}`,
-        status: route.query.status || '全部订单',
-        date: '2023-10-01',
-        title: '商品1',
-        price: 129.00,
-        num: 1,
-        img: 'https://picsum.photos/300/300?random=1'
-      },
-      {
-        id: '2',
-        orderNumber: `ORDER-${orderId}`,
-        status: route.query.status || '全部订单',
-        date: '2023-10-01',
-        title: '商品2',
-        price: 149.00,
-        num: 2,
-        img: 'https://picsum.photos/300/300?random=2'
-      }
-    ],
-    totalPrice: 427.00
+    // 示例：GET /api/orders?userId=xxx
+    const { data } = await axios.get('/api/orders', { params: { userId: user.id } })
+    orderList.value = data.data ?? []   // 按后端实际字段调整
+    console.log('当前 orderList.value:', orderList.value);
+  } catch (e) {
+    ElMessage.error('获取订单失败')
+  } finally {
+    loading.value = false
   }
 }
 
+const totalPrice = computed(() =>
+  orderList.value.reduce((sum, item) => sum + item.price * item.num, 0).toFixed(2)
+)
+/* 小工具：状态颜色 */
+const statusColor = st => {
+  const map = { 待付款: 'warning', 待发货: '', 待收货: 'info', 已完成: 'success', 已取消: 'danger' }
+  return map[st] ?? 'info'
+}
+
+onMounted(fetchOrders)
 const goBack = () => {
   router.back()
 }
-
-onMounted(() => {
-  fetchOrderDetail()
-})
 </script>
 
 <style scoped>
