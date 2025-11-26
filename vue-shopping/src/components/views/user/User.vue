@@ -83,17 +83,17 @@ const orderTabs = [
     { label: '待收货', icon: 'el-icon-box', badge: 0 },
     { label: '已完成', icon: 'el-icon-circle-check', badge: 0 }
 ]
-const goOrder = idx => {
-    if (idx === 0) {
-        router.push('/user/orders') // 假设全部订单的路由是 /user/orders
-    } else {
-        router.push(`/user/order/${idx - 1}`)
-    }
-}
+// const goOrder = idx => {
+//     if (idx === 0) {
+//         router.push('/user/orders') // 假设全部订单的路由是 /user/orders
+//     } else {
+//         router.push(`/user/order/${idx - 1}`)
+//     }
+// }
 
 const goOrderDetail = idx => {
-    const status = ['待付款', '待发货', '待收货', '已完成'][idx]
-    router.push(`/user/order/${idx + 1}?status=${status}`)
+    // const status = ['待付款', '待发货', '待收货', '已完成'][idx]
+    router.push(`/user/order/${idx + 1}`)
 }
 
 const goAllOrders = () => {

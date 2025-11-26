@@ -55,12 +55,15 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { computed } from 'vue'
+import request from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const orderList = ref([])
-
+const targetStatus = Number(route.params.id)
+console.log('当前 订单状态码:', targetStatus);
+const statusMap = { 1: '待付款', 2: '待发货', 3: '待收货', 4: '已完成' }
 /* 根据 user.id 拉取订单 */
 const fetchOrders = async () => {
   try {
@@ -71,10 +74,21 @@ const fetchOrders = async () => {
       ElMessage.warning('请先登录')
       return
     }
-
     // 示例：GET /api/orders?userId=xxx
-    const { data } = await axios.get('/api/orders', { params: { userId: user.id } })
-    orderList.value = data.data ?? []   // 按后端实际字段调整
+    const { data } = await request.get(`/api/order/list1/${user.id}`)
+    // orderList.value = data.data ?? []   // 按后端实际字段调整
+    orderList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
+      id: item.id,
+      orderNumber: item.id, // 如果没有订单号，用 id 代替
+      statusNumber: item.status,
+      status: statusMap[item.status] ?? '未知状态',
+      date: item.createTime.slice(0, 3).join('-'), // 取年月日
+      img: `data:image/png;base64,${item.productImage}`, // base64 图片
+      title: item.productName,
+      price: item.price,
+      num: item.quantity
+    }))
+    .filter(item => targetStatus != 0 ? item.statusNumber === targetStatus : true)
     console.log('当前 orderList.value:', orderList.value);
   } catch (e) {
     ElMessage.error('获取订单失败')
