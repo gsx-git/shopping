@@ -3,7 +3,7 @@
         <!-- 用户信息卡片 -->
         <el-card class="user-card">
             <div class="avatar-wrap">
-                <!-- <img src="https://picsum.photos/100/100?random=888" class="avatar" /> -->
+                <img :src="avatarUrl" class="avatar" @error="handleAvatarError" />
                 <div class="info">
                     <div class="name">{{ user.username }}</div>
                     <div class="phone">{{ user.phone }}</div>
@@ -66,31 +66,57 @@
 </template>
 
 <script setup>
+import { onMounted, reactive, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Location, Star, View, Service } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const router = useRouter()
 
 const raw = localStorage.getItem('system-user')
-const user  = raw ? JSON.parse(raw) : null        // user 可能为 null
+const user = raw ? JSON.parse(raw) : null
 console.log('当前 用户页user:', user);
 
-/* 订单入口 */
-const orderTabs = [
-    { label: '待付款', icon: 'el-icon-money', badge: 1 },
-    { label: '待发货', icon: 'el-icon-truck', badge: 2 },
+/* 头像地址（可写） */
+const avatarUrl = ref(
+    user ? `${import.meta.env.VITE_BASE_URL}/api/user/${user.id}/avatar`
+        : 'https://picsum.photos/100/100?random=888'
+)
+
+/* 图片 404 时 fallback */
+const handleAvatarError = () => {
+    avatarUrl.value = 'https://picsum.photos/100/100?random=888'
+}
+
+/* 1. 定义响应式数组，badge 默认 0，等待接口回填 */
+const orderTabs = reactive([
+    { label: '待付款', icon: 'el-icon-money', badge: 0 },
+    { label: '待发货', icon: 'el-icon-truck', badge: 0 },
     { label: '待收货', icon: 'el-icon-box', badge: 0 },
     { label: '已完成', icon: 'el-icon-circle-check', badge: 0 }
-]
-// const goOrder = idx => {
-//     if (idx === 0) {
-//         router.push('/user/orders') // 假设全部订单的路由是 /user/orders
-//     } else {
-//         router.push(`/user/order/${idx - 1}`)
-//     }
-// }
+])
 
+/* 2. 映射后端字段 → 数组下标 */
+const badgeMap = ['unpaid', 'unship', 'unreceived', 'completed']
+
+/* 3. 获取真实 badge 数字 */
+const loadBadge = async () => {
+    try {
+        const { data } = await request.get(`/api/order/list3/${user.id}`)
+        // data 示例：{ unpaid: 1, unship: 2, unreceived: 0, completed: 0 }
+        badgeMap.forEach((key, idx) => {
+            orderTabs[idx].badge = Number(data[key]) || 0
+        })
+        console.log('当前 orderTabs:', orderTabs);
+    } catch (e) {
+        ElMessage.error('订单数量加载失败')
+    }
+}
+
+onMounted(() => {
+    loadBadge()
+})
 const goOrderDetail = idx => {
     // const status = ['待付款', '待发货', '待收货', '已完成'][idx]
     router.push(`/user/order/${idx + 1}`)
@@ -178,5 +204,20 @@ const doLogout = () => {
 .label {
     margin-top: 6px;
     font-size: 13px;
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.default-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    background: #f0f0f0;
 }
 </style>

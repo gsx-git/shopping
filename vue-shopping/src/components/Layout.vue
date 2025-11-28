@@ -1,6 +1,23 @@
 <template>
     <el-header class="nav-header">
+        <!-- 左侧 Logo -->
         <div class="logo">🛒 超级商城</div>
+        <!-- 新增：登录/注册 or 欢迎/退出 -->
+        <div class="auth-bar">
+            <template v-if="!userInfo">
+                <span class="auth-btn" @click="showLogin">登录</span>
+                <span style="margin:0 6px;">/</span>
+                <span class="auth-btn" @click="showRegister">注册</span>
+            </template>
+
+            <template v-else>
+                <span style="margin-right:12px;color:#ff5000;">
+                    您好，{{ userInfo.username || userInfo.phone }}
+                </span>
+                <span class="auth-btn" @click="logout">退出</span>
+            </template>
+        </div>
+        <!-- 搜索框 -->
         <div class="search-wrap">
             <el-input v-model="searchKey" placeholder="搜你喜欢" clearable size="large" style="width: 380px;"
                 @keyup.enter="handleSearch">
@@ -20,6 +37,7 @@
 
     <el-main><router-view /></el-main>
 
+    <!-- 登录弹窗 -->
     <el-dialog v-model="loginVisible" title="登录" width="400px" append-to-body>
         <el-form :model="loginForm" label-width="60px">
             <el-form-item label="手机号"><el-input v-model="loginForm.phone" /></el-form-item>
@@ -30,62 +48,168 @@
             <el-button type="primary" @click="confirmLogin">登录</el-button>
         </template>
     </el-dialog>
+
+    <!-- 注册弹窗 -->
+    <el-dialog v-model="registerVisible" title="注册" width="420px" append-to-body>
+        <el-form :model="registerForm" :rules="registerRules" ref="registerRef" label-width="80px">
+            <el-form-item label="用户名" prop="username">
+                <el-input v-model="registerForm.username" />
+            </el-form-item>
+            <el-form-item label="手机号" prop="phone">
+                <el-input v-model="registerForm.phone" />
+            </el-form-item>
+            <el-form-item label="邮箱" prop="email">
+                <el-input v-model="registerForm.email" />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+                <el-input v-model="registerForm.password" type="password" show-password />
+            </el-form-item>
+            <el-form-item label="确认密码" prop="confirmPwd">
+                <el-input v-model="registerForm.confirmPwd" type="password" show-password />
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <el-button @click="registerVisible = false">取消</el-button>
+            <el-button type="primary" @click="confirmRegister">注册</el-button>
+        </template>
+    </el-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import request from "@/utils/request";
+/* ===== 登录状态 ===== */
+// 统一从 localStorage 拿
+const userInfo = computed(() => {
+    try {
+        return JSON.parse(localStorage.getItem('system-user') || '')
+    } catch {
+        return null
+    }
+})
 
-const route = useRoute()
-const router = useRouter()
+/* ---------- 搜索 ---------- */
 const searchKey = ref('')
-
 const handleSearch = () => {
     const key = searchKey.value.trim()
     if (!key) return ElMessage.warning('请输入搜索关键词')
     router.push({ path: '/search', query: { q: key } })
 }
+/* ---------- 路由 ---------- */
+const route = useRoute()
+const router = useRouter()
 
+/* ---------- 登录 ---------- */
 const loginVisible = ref(false)
 const loginForm = reactive({ phone: '', password: '' })
 const confirmLogin = () => {
-  // 简单校验
-  if (!loginForm.phone || !loginForm.password) {
-    ElMessage.warning('请填写完整')
-    return
-  }
-
-  // 调后台登录接口（路径按你实际的来）
-  request.post('/api/user/login',loginForm).then(res => {
-    if (res.code === 200) {             // 业务成功
-      ElMessage.success('登录成功')
-      loginVisible.value = false        // 关闭弹窗
-      router.push('/')                  // 跳到首页
-      localStorage.setItem('system-user', JSON.stringify(res.data)) // 存用户信息
-      console.log('当前 res.data:', res.data);
-    } else {                            // 业务失败
-      ElMessage.error(res.msg || '登录失败')
+    if (!loginForm.phone || !loginForm.password) {
+        ElMessage.warning('请填写完整')
+        return
     }
-  }).catch(err => {                     // 网络 / 系统异常
-    console.error(err)
-    ElMessage.error('网络异常，请稍后再试')
-  })
+    request.post('/api/user/login', loginForm)
+        .then(res => {
+            if (res.code === 200) {
+                ElMessage.success('登录成功')
+                loginVisible.value = false
+                localStorage.setItem('system-user', JSON.stringify(res.data))
+                location.reload()
+                router.push('/')
+            } else {
+                ElMessage.error(res.msg || '登录失败')
+            }
+        })
+        .catch(() => ElMessage.error('网络异常'))
 }
-/* 高亮下标（与 index 对应） */
-const activeIndex = ref('1')
+const showLogin = () => {
+    registerVisible.value = false
+    loginVisible.value = true
+}
+/* ---------- 注册 ---------- */
+const registerVisible = ref(false)
+const registerRef = ref()
+const registerForm = reactive({
+    username: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPwd: ''
+})
 
-/* 路由 → 高亮映射（支持前缀） */
+// 自定义二次密码校验
+const validateConfirm = (_, value, callback) => {
+    if (value !== registerForm.password) callback(new Error('两次密码输入不一致'))
+    else callback()
+}
+
+const registerRules = reactive({
+    username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+    phone: [
+        { required: true, message: '请输入手机号', trigger: 'blur' },
+        { pattern: /^1[3-9]\d{9}$/, message: '手机号格式错误', trigger: 'blur' }
+    ],
+    email: [
+        { required: true, message: '请输入邮箱', trigger: 'blur' },
+        { type: 'email', message: '邮箱格式错误', trigger: 'blur' }
+    ],
+    password: [
+        { required: true, message: '请输入密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '长度 6-20 位', trigger: 'blur' }
+    ],
+    confirmPwd: [
+        { required: true, message: '请再次输入密码', trigger: 'blur' },
+        { validator: validateConfirm, trigger: 'blur' }
+    ]
+})
+
+const confirmRegister = () => {
+    registerRef.value.validate(valid => {
+        if (!valid) return
+        request.post('/api/user/register', registerForm)
+            .then(res => {
+                if (res.code === 200) {
+                    ElMessage.success('注册成功，请登录')
+                    registerVisible.value = false
+                    // 清空表单
+                    Object.keys(registerForm).forEach(k => (registerForm[k] = ''))
+                    // 自动打开登录
+                    loginVisible.value = true
+                } else {
+                    ElMessage.error(res.msg || '注册失败')
+                }
+            })
+            .catch(() => ElMessage.error('网络异常'))
+    })
+}
+const showRegister = () => {
+    loginVisible.value = false
+    registerVisible.value = true
+}
+/* ===== 退出 ===== */
+const logout = () => {
+    ElMessageBox.confirm('确认退出登录？', '提示', {
+        type: 'warning',
+        confirmButtonText: '退出',   // ← 自定义确认按钮文字
+        cancelButtonText: '取消'     // 可选：同时改取消按钮
+    }).then(() => {
+        localStorage.removeItem('system-user')
+        ElMessage.success('已退出')
+        // 刷新当前页（或 router.push('/')）
+        location.reload()
+    })
+        .catch(() => { }) // 点取消无动作
+}
+/* ---------- 菜单高亮 ---------- */
+const activeIndex = ref('1')
 const routeMap = [
     { prefix: '/cart', index: '2' },
     { prefix: '/user', index: '3' },
     { prefix: '/ushop', index: '4' },
     { prefix: '/', index: '1' }   // 兜底放最后
 ]
-
-/* 根据当前路径设置高亮（首次 + 变化） */
 watch(
     () => route.path,
     path => {
@@ -94,27 +218,13 @@ watch(
     },
     { immediate: true }
 )
-/* 点击方法：跳转 + 高亮 */
-const goHome = () => {
-    router.push('/')
-}
-const goCart = () => {
-    if (localStorage.getItem('system-user')) router.push('/cart')
-    else {
-        ElMessage.warning('请先登录')
-        loginVisible.value = true
-    }
-}
-const goUser = () => {
-    /* 登录拦截 */
-    if (localStorage.getItem('system-user')) router.push('/user')
-    else {
-        ElMessage.warning('请先登录')
-        loginVisible.value = true
-    }
-}
-const goUshop = () => {
-    if (localStorage.getItem('system-user')) router.push('/ushop')
+/* ---------- 菜单跳转 ---------- */
+const goHome = () => router.push('/')
+const goCart = () => checkLogin('/cart')
+const goUser = () => checkLogin('/user')
+const goUshop = () => checkLogin('/ushop')
+const checkLogin = path => {
+    if (localStorage.getItem('system-user')) router.push(path)
     else {
         ElMessage.warning('请先登录')
         loginVisible.value = true
@@ -136,6 +246,17 @@ const goUshop = () => {
     font-weight: bold;
     color: #ff5000;
     flex-shrink: 0;
+}
+
+/* 新增：登录/注册 */
+.auth-bar {
+    margin-left: 16px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    /* 手型指针 */
+    transition: color .2s;
+    /* 与 el-menu 同步过渡 */
 }
 
 /* 搜索框区域：永远居中 */

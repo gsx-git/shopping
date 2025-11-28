@@ -43,60 +43,64 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 
 const trackList = ref([])
 
-/* 获取浏览记录列表 */
-const fetchTrackList = () => {
-  // 模拟从后端获取浏览记录列表
-  trackList.value = [
-    {
-      id: '1',
-      title: '商品1',
-      price: 129.00,
-      img: 'https://picsum.photos/100/100?random=1',
-      viewedAt: '2023-10-01 10:00:00'
-    },
-    {
-      id: '2',
-      title: '商品2',
-      price: 149.00,
-      img: 'https://picsum.photos/100/100?random=2',
-      viewedAt: '2023-10-02 11:00:00'
+/* 获取真实浏览记录 */
+const fetchTrackList = async () => {
+  try {
+    const raw = localStorage.getItem('system-user')
+    const user = raw ? JSON.parse(raw) : null
+    if (!user?.id) {
+      ElMessage.warning('请先登录')
+      router.replace('/')
+      return
     }
-  ]
+
+    const { data } = await request.get(`/api/userHistory/list/${user.id}`)
+    // 后端返回：Result.suc(List<TrackProductDTO>)
+    trackList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
+      id: item.productId,
+      title: item.productName,
+      price: item.price,
+      img: item.image
+        ? `data:image/png;base64,${item.image}`
+        : 'https://picsum.photos/100/100?random=1',
+      viewedAt: item.viewedAt || '--'
+    }))
+  } catch (e) {
+    ElMessage.error('获取浏览记录失败')
+  }
 }
 
 /* 加入购物车 */
 const addCart = (id) => {
-  ElMessage.success(`商品${id}已加入购物车`)
+  /* 调你现成的加购接口 */
+  ElMessage.success(`商品${id} 已加入购物车`)
 }
 
 /* 删除浏览记录 */
-const removeTrack = (id) => {
-  const index = trackList.value.findIndex(item => item.id === id)
-  if (index > -1) {
-    trackList.value.splice(index, 1)
+const removeTrack = async (id) => {
+  try {
+    // 根据实际接口调整
+    await request.delete(`/api/track/${id}`)
     ElMessage.success('浏览记录已删除')
+    // 重新拉列表
+    await fetchTrackList()
+  } catch (e) {
+    ElMessage.error('删除失败')
   }
 }
 
-/* 跳转到商品详情页 */
-const goDetail = (id) => {
-  router.push(`/product/${id}`)
-}
+/* 跳商品详情 */
+const goDetail = (id) => router.push(`/product/${id}`)
+const goBack = () => router.back()
 
-/* 返回上一页 */
-const goBack = () => {
-  router.back()
-}
-
-onMounted(() => {
-  fetchTrackList()
-})
+onMounted(fetchTrackList)
 </script>
 
 <style scoped>

@@ -1,14 +1,16 @@
 <template>
   <el-main class="product-detail-main">
-    <!-- 返回按钮容器 -->
-    <div class="header-container">
-      <el-button type="text" @click="goBack" class="back-button">
-        返回 <i class="el-icon-arrow-left"></i>
-      </el-button>
-    </div>
-
     <!-- 商品信息卡片 -->
     <el-card class="product-card">
+      <template #header>
+        <div class="product-header">
+          <span>商品信息</span>
+          <!-- 返回按钮 -->
+          <el-button type="text" @click="goBack" class="back-button">
+            返回 <i class="el-icon-arrow-left"></i>
+          </el-button>
+        </div>
+      </template>
       <el-row :gutter="20">
         <el-col :span="12">
           <div class="product-img-wrap">
@@ -18,7 +20,10 @@
         <el-col :span="12">
           <div class="product-info">
             <h2 class="product-title">{{ product.title }}</h2>
-            <div class="product-price">¥{{ product.price }}</div>
+            <div class="product-price">
+              ¥{{ product.price }}
+              <span class="sales-tip">已售 {{ product.sales }} 件</span>
+            </div>
             <div class="product-description">{{ product.description }}</div>
             <div class="product-actions">
               <el-button type="primary" @click="addCart">加入购物车</el-button>
@@ -62,79 +67,122 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 
-const product = ref({
-  id: '',
-  title: '',
-  price: 0,
-  img: '',
-  description: ''
-})
-
-const reviews = ref([])
-
+const product = ref({})   // 详情
+const reviews = ref([])   // 评价
 const isFavorited = ref(false)
 
-/* 获取商品详情 */
-const fetchProduct = () => {
-  const productId = route.params.id
-  if (!productId) {
-    ElMessage.error('商品ID无效')
+/* 当前用户 */
+const currentUser = (() => {
+  const raw = localStorage.getItem('system-user')
+  return raw ? JSON.parse(raw) : null
+})()
+/* ① 商品详情 */
+const fetchProduct = async () => {
+  const id = route.params.id
+  try {
+    const { data } = await request.get(`/api/product/list1/${id}`)
+    product.value = {
+      id: data.productId,
+      title: data.name,
+      price: data.price,
+      description: data.subtitle || data.description,
+      sales: data.sales || 0,
+      img: data.productImg
+        ? `data:image/png;base64,${data.productImg}`
+        : 'https://picsum.photos/300/300?random=' + id
+    }
+  } catch (e) {
+    ElMessage.error('获取商品详情失败')
+  }
+}
+
+/* ② 商品评价 */
+const fetchReviews = async () => {
+  const id = route.params.id
+  try {
+    const { data } = await request.get(`/api/product/${id}/reviews`)
+    reviews.value = (Array.isArray(data) ? data : data.data ?? []).map(r => ({
+      id: r.id,
+      username: r.userName,
+      avatar: r.avatar
+        ? `data:image/png;base64,${r.avatar}`
+        : 'https://picsum.photos/50/50?random=' + r.id,
+      text: r.content
+    }))
+  } catch (e) {
+    ElMessage.error('获取评价失败')
+  }
+}
+
+/* ③ 收藏状态 */
+const fetchFavoriteStatus = async () => {
+  if (!currentUser?.id) return   // 未登录不查询
+  const id = route.params.id
+  try {
+    const { data } = await request.get(
+      `/api/collection/exists`,
+      { params: { userId: currentUser.id, productId: id } }
+    )
+    isFavorited.value = Boolean(data)   // 后端返回 true/false
+  } catch (e) { /* 静默失败 */ }
+}
+
+/* ④ 加入购物车 */
+const addCart = async () => {
+  if (!currentUser?.id) {
+    ElMessage.warning('请先登录')
     return
   }
-  // 模拟从后端获取商品详情
-  product.value = {
-    id: productId,
-    title: `商品${productId}`,
-    price: (Math.random() * 100).toFixed(2),
-    img: `https://picsum.photos/300/300?random=${productId}`,
-    description: `这是商品${productId}的详细描述`
+  try {
+    await request.post('/api/cart', {
+      userId: currentUser.id,
+      productId: product.value.id,
+      quantity: 1
+    })
+    ElMessage.success(`“${product.value.title}” 已加入购物车`)
+  } catch (e) {
+    ElMessage.error('加入购物车失败')
   }
 }
 
-/* 获取商品评价 */
-const fetchReviews = () => {
-  const productId = route.params.id
-  if (!productId) {
-    ElMessage.error('商品ID无效')
+/* ⑤ 收藏 / 取消收藏 */
+const toggleFavorite = async () => {
+  if (!currentUser?.id) {
+    ElMessage.warning('请先登录')
     return
   }
-  // 模拟从后端获取商品评价
-  reviews.value = Array.from({ length: 3 }, (_, i) => ({
-    id: `${productId}-${i}`,
-    username: `用户${i + 1}`,
-    avatar: `https://picsum.photos/50/50?random=${i}`,
-    text: `这是商品${productId}的评价${i + 1}`
-  }))
-}
-
-/* 加入购物车 */
-const addCart = () => {
-  ElMessage.success(`“${product.value.title}” 已加入购物车`)
-  ElMessage.info('购买后才能进行评价')
-}
-
-/* 切换收藏状态 */
-const toggleFavorite = () => {
-  isFavorited.value = !isFavorited.value
-  if (isFavorited.value) {
-    ElMessage.success('已收藏')
-  } else {
-    ElMessage.info('已取消收藏')
+  const id = route.params.id
+  try {
+    if (isFavorited.value) {
+      await request.delete(`/api/collection/${id}`, {
+        params: { userId: currentUser.id }
+      })
+      ElMessage.info('已取消收藏')
+    } else {
+      await request.post('/api/collection', {
+        userId: currentUser.id,
+        productId: id
+      })
+      ElMessage.success('已收藏')
+    }
+    isFavorited.value = !isFavorited.value
+  } catch (e) {
+    ElMessage.error('操作失败')
   }
 }
 
-/* 返回上一页 */
-const goBack = () => {
-  router.back()
-}
+/* 返回 */
+const goBack = () => router.back()
 
 onMounted(() => {
   fetchProduct()
   fetchReviews()
+  fetchFavoriteStatus()
 })
 </script>
 
@@ -150,14 +198,19 @@ onMounted(() => {
   padding: 20px;
 }
 
-.back-button {
-  margin-bottom: 20px;
-  color: #ff5000;
-  font-size: 14px;
-}
-
 .product-card {
   margin-bottom: 20px;
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-button {
+  color: #ff5000;
+  font-size: 14px;
 }
 
 .product-img-wrap {
@@ -246,5 +299,12 @@ onMounted(() => {
 .review-text {
   font-size: 14px;
   color: #666;
+}
+
+.sales-tip {
+  margin-left: 12px;
+  font-size: 13px;
+  color: #999;
+  font-weight: normal;
 }
 </style>

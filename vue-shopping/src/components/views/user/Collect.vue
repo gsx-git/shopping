@@ -40,58 +40,63 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
 
 const collectList = ref([])
 
-/* 获取收藏列表 */
-const fetchCollectList = () => {
-  // 模拟从后端获取收藏列表
-  collectList.value = [
-    {
-      id: '1',
-      title: '商品1',
-      price: 129.00,
-      img: 'https://picsum.photos/100/100?random=1'
-    },
-    {
-      id: '2',
-      title: '商品2',
-      price: 149.00,
-      img: 'https://picsum.photos/100/100?random=2'
+/* 获取真实收藏列表 */
+const fetchCollectList = async () => {
+  try {
+    const raw = localStorage.getItem('system-user')
+    const user = raw ? JSON.parse(raw) : null
+    if (!user?.id) {
+      ElMessage.warning('请先登录')
+      router.replace('/')
+      return
     }
-  ]
+
+    const { data } = await request.get(`/api/collection/list/${user.id}`)
+    // 后端返回：Result.suc(List<CollectedProductDTO>)
+    collectList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
+      id: item.productId,
+      title: item.productName,
+      price: item.price,
+      img: item.image
+        ? `data:image/png;base64,${item.image}`
+        : 'https://picsum.photos/100/100?random=1'
+    }))
+  } catch (e) {
+    ElMessage.error('获取收藏失败')
+  }
 }
 
 /* 加入购物车 */
 const addCart = (id) => {
-  ElMessage.success(`商品${id}已加入购物车`)
+  /* 这里调你现成的加购接口即可 */
+  ElMessage.success(`商品${id} 已加入购物车`)
 }
 
 /* 取消收藏 */
-const removeCollect = (id) => {
-  const index = collectList.value.findIndex(item => item.id === id)
-  if (index > -1) {
-    collectList.value.splice(index, 1)
+const removeCollect = async (id) => {
+  try {
+    // 示例：DELETE /api/collect/{productId}  根据实际修改
+    await request.delete(`/api/collect/${id}`)
     ElMessage.success('已取消收藏')
+    // 重新拉列表（或本地 filter 一行代码）
+    await fetchCollectList()
+  } catch (e) {
+    ElMessage.error('取消收藏失败')
   }
 }
 
-/* 跳转到商品详情页 */
-const goDetail = (id) => {
-  router.push(`/product/${id}`)
-}
+/* 跳商品详情 */
+const goDetail = (id) => router.push(`/product/${id}`)
+const goBack = () => router.back()
 
-/* 返回上一页 */
-const goBack = () => {
-  router.back()
-}
-
-onMounted(() => {
-  fetchCollectList()
-})
+onMounted(fetchCollectList)
 </script>
 
 <style scoped>
