@@ -25,9 +25,9 @@
         <el-table-column label="价格" width="120">
           <template #default="{ row }">¥{{ row.price }}</template>
         </el-table-column>
-        <el-table-column label="浏览时间" width="180">
+        <!-- <el-table-column label="浏览时间" width="180">
           <template #default="{ row }">{{ row.viewedAt }}</template>
-        </el-table-column>
+        </el-table-column> -->
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button type="text" @click="addCart(row.id)">加入购物车</el-button>
@@ -66,7 +66,7 @@ const fetchTrackList = async () => {
     trackList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
       id: item.productId,
       title: item.productName,
-      price: item.price,
+      price: item.productPrice,
       img: item.image
         ? `data:image/png;base64,${item.image}`
         : 'https://picsum.photos/100/100?random=1',

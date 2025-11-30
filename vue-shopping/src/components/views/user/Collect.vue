@@ -14,12 +14,12 @@
       <el-table :data="collectList" row-key="id" show-overflow-tooltip>
         <el-table-column label="商品图片" width="120">
           <template #default="{ row }">
-            <img :src="row.img" class="collect-img" @click="goDetail(row.id)" />
+            <img :src="row.img" class="collect-img" @click="goDetail(row.productId)" />
           </template>
         </el-table-column>
         <el-table-column label="商品名称" min-width="200">
           <template #default="{ row }">
-            <span @click="goDetail(row.id)">{{ row.title }}</span>
+            <span @click="goDetail(row.productId)">{{ row.title }}</span>
           </template>
         </el-table-column>
         <el-table-column label="价格" width="120">
@@ -61,7 +61,8 @@ const fetchCollectList = async () => {
     const { data } = await request.get(`/api/collection/list/${user.id}`)
     // 后端返回：Result.suc(List<CollectedProductDTO>)
     collectList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
-      id: item.productId,
+      id: item.id,
+      productId: item.productId,
       title: item.productName,
       price: item.price,
       img: item.image
@@ -82,10 +83,8 @@ const addCart = (id) => {
 /* 取消收藏 */
 const removeCollect = async (id) => {
   try {
-    // 示例：DELETE /api/collect/{productId}  根据实际修改
-    await request.delete(`/api/collect/${id}`)
+    await request.delete(`/api/collection/delete/${id}`)
     ElMessage.success('已取消收藏')
-    // 重新拉列表（或本地 filter 一行代码）
     await fetchCollectList()
   } catch (e) {
     ElMessage.error('取消收藏失败')

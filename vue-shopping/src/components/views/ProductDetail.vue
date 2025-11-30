@@ -75,6 +75,7 @@ const router = useRouter()
 const product = ref({})   // 详情
 const reviews = ref([])   // 评价
 const isFavorited = ref(false)
+let collectid = null   // 新增：供取消收藏时使用
 
 /* 当前用户 */
 const currentUser = (() => {
@@ -104,13 +105,14 @@ const fetchProduct = async () => {
 /* ② 商品评价 */
 const fetchReviews = async () => {
   const id = route.params.id
+  console.log(route.params)
   try {
-    const { data } = await request.get(`/api/product/${id}/reviews`)
+    const { data } = await request.get(`/api/productComment/list/${id}`)
     reviews.value = (Array.isArray(data) ? data : data.data ?? []).map(r => ({
       id: r.id,
-      username: r.userName,
-      avatar: r.avatar
-        ? `data:image/png;base64,${r.avatar}`
+      username: r.username,
+      avatar: r.userImage
+        ? `data:image/png;base64,${r.userImage}`
         : 'https://picsum.photos/50/50?random=' + r.id,
       text: r.content
     }))
@@ -119,17 +121,32 @@ const fetchReviews = async () => {
   }
 }
 
-/* ③ 收藏状态 */
+/* ③ 收藏状态 - 拉列表比对 并保存当前商品收藏id*/
 const fetchFavoriteStatus = async () => {
-  if (!currentUser?.id) return   // 未登录不查询
-  const id = route.params.id
+  if (!currentUser?.id) return
+
   try {
-    const { data } = await request.get(
-      `/api/collection/exists`,
-      { params: { userId: currentUser.id, productId: id } }
-    )
-    isFavorited.value = Boolean(data)   // 后端返回 true/false
-  } catch (e) { /* 静默失败 */ }
+    const { data } = await request.get(`/api/collection/list/${currentUser.id}`)
+    const list = Array.isArray(data) ? data : data.data ?? []
+
+    // 当前商品 id
+    const pid = Number(route.params.id)
+
+    // 找到对应收藏项
+    const hit = list.find(i => Number(i.productId || i.id) === pid)
+
+    if (hit) {
+      isFavorited.value = true
+      // 后端返回的主键字段名如果是 collectId / collectionId / id 按需改
+      collectid = hit.id
+    } else {
+      isFavorited.value = false
+      collectid = null
+    }
+  } catch (e) {
+    isFavorited.value = false
+    collectid = null
+  }
 }
 
 /* ④ 加入购物车 */
@@ -156,17 +173,15 @@ const toggleFavorite = async () => {
     ElMessage.warning('请先登录')
     return
   }
-  const id = route.params.id
+  const productid = route.params.id
   try {
     if (isFavorited.value) {
-      await request.delete(`/api/collection/${id}`, {
-        params: { userId: currentUser.id }
-      })
+      await request.delete(`/api/collection/delete/${collectid}`)
       ElMessage.info('已取消收藏')
     } else {
-      await request.post('/api/collection', {
-        userId: currentUser.id,
-        productId: id
+      await request.post('/api/collection/add', {
+        user:{id:currentUser.id},
+        product: {id:productid}
       })
       ElMessage.success('已收藏')
     }
@@ -179,9 +194,9 @@ const toggleFavorite = async () => {
 /* 返回 */
 const goBack = () => router.back()
 
-onMounted(() => {
-  fetchProduct()
-  fetchReviews()
+onMounted(async () => {
+  await fetchProduct()   // 先把 product.id 拿到
+  fetchReviews()         // 再用 product.id 拉评论
   fetchFavoriteStatus()
 })
 </script>
