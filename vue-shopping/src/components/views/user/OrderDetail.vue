@@ -4,7 +4,7 @@
     <el-card class="order-card">
       <template #header>
         <div class="order-header">
-          <span>订单详情</span>
+          <span>我的订单</span>
           <el-button type="text" @click="goBack" class="back-button">
             返回 <i class="el-icon-arrow-left"></i>
           </el-button>

@@ -103,12 +103,15 @@ const badgeMap = ['unpaid', 'unship', 'unreceived', 'completed']
 /* 3. 获取真实 badge 数字 */
 const loadBadge = async () => {
     try {
-        const { data } = await request.get(`/api/order/list3/${user.id}`)
-        // data 示例：{ unpaid: 1, unship: 2, unreceived: 0, completed: 0 }
+        const res = await request.get(`/api/order/list3/${user.id}`)
+
+        // 400 或 data 为空时兜底成 0
+        const stat = res.data || { unpaid: 0, unship: 0, unreceived: 0, completed: 0 }
+
         badgeMap.forEach((key, idx) => {
-            orderTabs[idx].badge = Number(data[key]) || 0
+            orderTabs[idx].badge = Number(stat[key]) || 0
         })
-        console.log('当前 orderTabs:', orderTabs);
+        // console.log('当前 orderTabs:', orderTabs);
     } catch (e) {
         ElMessage.error('订单数量加载失败')
     }

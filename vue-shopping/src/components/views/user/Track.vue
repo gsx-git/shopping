@@ -31,7 +31,7 @@
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button type="text" @click="addCart(row.id)">加入购物车</el-button>
-            <el-button type="text" @click="removeTrack(row.id)">删除记录</el-button>
+            <el-button type="text" @click="removeTrack(row.historyId)">删除记录</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -65,6 +65,7 @@ const fetchTrackList = async () => {
     // 后端返回：Result.suc(List<TrackProductDTO>)
     trackList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
       id: item.productId,
+      historyId: item.historyId,
       title: item.productName,
       price: item.productPrice,
       img: item.image
@@ -84,10 +85,10 @@ const addCart = (id) => {
 }
 
 /* 删除浏览记录 */
-const removeTrack = async (id) => {
+const removeTrack = async (historyId) => {
   try {
     // 根据实际接口调整
-    await request.delete(`/api/track/${id}`)
+    await request.delete(`/api/userHistory/delete/${historyId}`)
     ElMessage.success('浏览记录已删除')
     // 重新拉列表
     await fetchTrackList()
@@ -120,9 +121,9 @@ onMounted(fetchTrackList)
 }
 
 .track-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex;  /* 垂直居中 */
+  justify-content: space-between; /* 水平居右 */
+  align-items: center;  /* 垂直居中 */
 }
 
 .track-img {

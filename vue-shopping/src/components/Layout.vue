@@ -52,6 +52,16 @@
     <!-- 注册弹窗 -->
     <el-dialog v-model="registerVisible" title="注册" width="420px" append-to-body>
         <el-form :model="registerForm" :rules="registerRules" ref="registerRef" label-width="80px">
+            <!-- 1. 头像上传 -->
+            <el-form-item label="头像" prop="avatar">
+                <el-upload class="avatar-uploader" :show-file-list="false" :before-upload="beforeAvatar"
+                    :http-request="dummyRequest" accept="image/jpeg,image/jpg,image/png">
+                    <img v-if="registerForm.avatar" :src="registerForm.avatar" class="avatar" />
+                    <el-icon v-else class="avatar-uploader-icon">
+                        <Plus />
+                    </el-icon>
+                </el-upload>
+            </el-form-item>
             <el-form-item label="用户名" prop="username">
                 <el-input v-model="registerForm.username" />
             </el-form-item>
@@ -64,8 +74,8 @@
             <el-form-item label="密码" prop="password">
                 <el-input v-model="registerForm.password" type="password" show-password />
             </el-form-item>
-            <el-form-item label="确认密码" prop="confirmPwd">
-                <el-input v-model="registerForm.confirmPwd" type="password" show-password />
+            <el-form-item label="确认密码" prop="confirmPassword">
+                <el-input v-model="registerForm.confirmPassword" type="password" show-password />
             </el-form-item>
         </el-form>
         <template #footer>
@@ -79,8 +89,9 @@
 import { ref, reactive, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Plus } from '@element-plus/icons-vue'
 import request from "@/utils/request";
+import axios from 'axios';
 /* ===== 登录状态 ===== */
 // 统一从 localStorage 拿
 const userInfo = computed(() => {
@@ -136,9 +147,28 @@ const registerForm = reactive({
     phone: '',
     email: '',
     password: '',
-    confirmPwd: ''
+    confirmPassword: '',
+    avatar: '',        // 新增：头像预览地址
+    avatarFile: null   // 新增：真正的 File 对象
 })
+/* 头像上传前校验 */
+const beforeAvatar = (rawFile) => {
+  const allow = ['image/jpeg', 'image/jpg', 'image/png']
+  if (!allow.includes(rawFile.type)) {
+    ElMessage.error('头像只能是 JPG / PNG 格式')
+    return false
+  }
+  if (rawFile.size / 1024 / 1024 > 2) {
+    ElMessage.error('头像大小不能超过 2MB')
+    return false
+  }
+  registerForm.avatarFile = rawFile
+  registerForm.avatar = URL.createObjectURL(rawFile)
+  return false
+}
 
+/* el-upload 占位函数（手动上传必须） */
+const dummyRequest = () => { }
 // 自定义二次密码校验
 const validateConfirm = (_, value, callback) => {
     if (value !== registerForm.password) callback(new Error('两次密码输入不一致'))
@@ -159,31 +189,36 @@ const registerRules = reactive({
         { required: true, message: '请输入密码', trigger: 'blur' },
         { min: 6, max: 20, message: '长度 6-20 位', trigger: 'blur' }
     ],
-    confirmPwd: [
+    confirmPassword: [
         { required: true, message: '请再次输入密码', trigger: 'blur' },
         { validator: validateConfirm, trigger: 'blur' }
     ]
 })
 
-const confirmRegister = () => {
-    registerRef.value.validate(valid => {
-        if (!valid) return
-        request.post('/api/user/register', registerForm)
-            .then(res => {
-                if (res.code === 200) {
-                    ElMessage.success('注册成功，请登录')
-                    registerVisible.value = false
-                    // 清空表单
-                    Object.keys(registerForm).forEach(k => (registerForm[k] = ''))
-                    // 自动打开登录
-                    loginVisible.value = true
-                } else {
-                    ElMessage.error(res.msg || '注册失败')
-                }
-            })
-            .catch(() => ElMessage.error('网络异常'))
-    })
-}
+/* 注册提交 */
+const confirmRegister = async () => {
+  const valid = await registerRef.value.validate();
+  if (!valid) return;
+
+  const fd = new FormData();
+  if (registerForm.avatarFile) fd.append('avatar', registerForm.avatarFile);
+
+  const { avatar, avatarFile, ...raw } = registerForm;
+  fd.append('user', new Blob([JSON.stringify(raw)], { type: 'application/json' }));
+
+  /* ❶ 用原生 axios ❷ 不手动写 Content-Type */
+  axios.post(`${import.meta.env.VITE_BASE_URL}/api/user/register`, fd)
+       .then(res => {
+         if (res.data.code === 200) {
+           ElMessage.success('注册成功');
+           registerVisible.value = false;
+           loginVisible.value = true;
+         } else {
+           ElMessage.error(res.data.msg || '注册失败');
+         }
+       })
+       .catch(() => ElMessage.error('网络异常'));
+};
 const showRegister = () => {
     loginVisible.value = false
     registerVisible.value = true
@@ -276,5 +311,27 @@ const checkLogin = path => {
 .right-menu {
     flex-shrink: 0;
     margin-left: auto;
+}
+.avatar-uploader ::v-deep .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+}
+.avatar {
+  width: 100px;
+  height: 100px;
+  display: block;
+  object-fit: cover;
 }
 </style>
