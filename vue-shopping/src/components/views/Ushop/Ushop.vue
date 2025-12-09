@@ -87,26 +87,30 @@
 
 <script setup>
 /* ========== 引入 ========== */
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-    Setting,        // ← 已存在，保持
-    TrendCharts,    // ← 已存在，保持
-    ChatDotRound,   // ← 已存在，保持
-    Discount,       // ← 已存在，保持
-    Upload,         // ← 对应“上架”箭头
-    Download,       // ← 对应“下载”箭头
-    Warning,      // ← 对应“提醒”警告
-    Star,         // ← 对应“收藏”星星
-    Van,          // ← 对应“待发货”货车
-    Goods,        // ← 对应“待收货”包裹
-    CircleCheck,  // ← 已存在，保持
-    RefreshLeft   // ← 对应“退款/售后”退回箭头
+    Setting,
+    TrendCharts,
+    ChatDotRound,
+    Discount,
+    Upload,
+    Download,
+    WarningFilled,
+    Star,
+    Van,
+    Goods,
+    CircleCheck,
+    RefreshLeft,
+    RefreshRight
 } from '@element-plus/icons-vue'
 
 /* ========== 基础数据 ========== */
 const router = useRouter()
+
+// 后端返回字段
+const badgeMap = ['unpaid', 'unship', 'unreceived', 'completed']
 
 /* 读取当前登录用户（与 Layout 保持一致） */
 const user = computed(() => {
@@ -134,19 +138,27 @@ const handleAvatarError = () => {
 }
 
 /* ========== 商品/订单 快捷入口 ========== */
-const productTabs = [
-    { label: '上架商品', icon: Upload, badge: 5 },
-    { label: '下架商品', icon: Download, badge: 3 },
-    { label: '库存预警', icon: Warning, badge: 2 },
-    { label: '新品推荐', icon: Star, badge: 0 }
-]
-const orderTabs = [
-    { label: '待发货', icon: Van, badge: 2 },
-    { label: '待收货', icon: Goods, badge: 1 },
-    { label: '已完成', icon: CircleCheck, badge: 0 },
-    { label: '退款/售后', icon: RefreshLeft, badge: 0 }
-]
+const productTabs = reactive([
+  { label: '上架商品', icon: markRaw(Upload),       badge: 5 },
+  { label: '下架商品', icon: markRaw(Download),     badge: 3 },
+  { label: '库存预警', icon: markRaw(WarningFilled), badge: 2 },
+  { label: '新品推荐', icon: markRaw(Star),          badge: 0 }
+])
 
+const orderTabs = reactive([
+  { label: '待发货',  icon: markRaw(Van),         badge: 2 },
+  { label: '待收货',  icon: markRaw(Goods),       badge: 1 },
+  { label: '已完成',  icon: markRaw(CircleCheck), badge: 0 },
+  { label: '退款/售后', icon: markRaw(RefreshLeft), badge: 0 }
+])
+
+/* 功能菜单图标与跳转地址 */
+const menuList = [
+  { label: '店铺设置',  index: 'settings',   icon: markRaw(Setting) },
+  { label: '销售统计',  index: 'sales',      icon: markRaw(TrendCharts) },
+  { label: '评价管理',  index: 'reviews',    icon: markRaw(ChatDotRound) },
+  { label: '促销活动',  index: 'promotions', icon: markRaw(Discount) }
+]
 /* ========== 跳转函数 ========== */
 const goProduct = idx => router.push(`/ushop/product/${idx}`)
 const goOrder = idx => router.push(`/ushop/order/${idx}`)
@@ -157,7 +169,7 @@ const goShopHome = () => ElMessage.success('跳转到店铺首页（待实现）
 <style scoped>
 .ushop-main {
     background-color: #f5f5f5;
-    padding: 20px
+    padding: 20px;
 }
 
 .shop-card {
@@ -185,36 +197,36 @@ const goShopHome = () => ElMessage.success('跳转到店铺首页（待实现）
 
 .shop-card__name {
     font-size: 18px;
-    font-weight: bold
+    font-weight: bold;
 }
 
 .shop-card__phone {
     color: #999;
     font-size: 14px;
-    margin-top: 4px
+    margin-top: 4px;
 }
 
 .shop-card__actions {
     display: flex;
     flex-direction: column;
-    gap: 8px
+    gap: 8px;
 }
 
 .section-card {
-    margin-bottom: 20px
+    margin-bottom: 20px;
 }
 
 .order-cell {
     text-align: center;
-    cursor: pointer
+    cursor: pointer;
 }
 
 .order-cell:hover {
-    color: #ff5000
+    color: #ff5000;
 }
 
 .label {
     margin-top: 6px;
-    font-size: 13px
+    font-size: 13px;
 }
 </style>
