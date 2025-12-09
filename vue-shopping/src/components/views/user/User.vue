@@ -7,8 +7,8 @@
                 <div class="avatar-wrap">
                     <img :src="avatarUrl" class="avatar" @error="handleAvatarError" />
                     <div class="info">
-                        <div class="name">{{ user.username }}</div>
-                        <div class="phone">{{ user.phone }}</div>
+                        <div class="name">{{ user.username || '超级用户' }}</div>
+                        <div class="phone">{{ user.phone || "***我的电话***" }}</div>
                     </div>
                 </div>
 
@@ -23,7 +23,8 @@
         </el-card>
 
         <!-- 订单快捷入口 -->
-        <el-card class="section-card"><template #header>
+        <el-card class="section-card">
+            <template #header>
                 <div class="order-header">
                     <span>我的订单</span>
                     <el-button type="text" @click="goAllOrders" class="all-orders-button">
@@ -31,11 +32,14 @@
                     </el-button>
                 </div>
             </template>
+            <!-- 订单入口 -->
             <el-row :gutter="20">
-                <el-col :span="6" v-for="(t, idx) in orderTabs" :key="idx">
+                <el-col :span="6" v-for="(t, idx) in orderTabs" :key="'order-' + idx">
                     <div class="order-cell" @click="goOrderDetail(idx)">
                         <el-badge :value="t.badge" class="badge">
-                            <i :class="t.icon" style="font-size: 24px;"></i>
+                            <el-icon :size="24">
+                                <component :is="t.icon" />
+                            </el-icon>
                         </el-badge>
                         <div class="label">{{ t.label }}</div>
                     </div>
@@ -46,33 +50,16 @@
         <!-- 功能列表 -->
         <el-card class="section-card">
             <el-menu :border="false" @select="handleMenu">
-                <el-menu-item index="address">
+                <el-menu-item v-for="m in menuList" :key="'menu-' + m.index" :index="m.index">
                     <el-icon>
-                        <Location />
+                        <component :is="m.icon" />
                     </el-icon>
-                    <span>收货地址</span>
-                </el-menu-item>
-                <el-menu-item index="collect">
-                    <el-icon>
-                        <Star />
-                    </el-icon>
-                    <span>我的收藏</span>
-                </el-menu-item>
-                <el-menu-item index="track">
-                    <el-icon>
-                        <View />
-                    </el-icon>
-                    <span>浏览记录</span>
-                </el-menu-item>
-                <el-menu-item index="service">
-                    <el-icon>
-                        <Service />
-                    </el-icon>
-                    <span>联系客服</span>
+                    <span>{{ m.label }}</span>
                 </el-menu-item>
             </el-menu>
         </el-card>
     </el-main>
+
     <!-- 2. 复用注册弹窗，仅把标题动态化 -->
     <el-dialog v-model="editVisible" title="修改个人信息" width="420px" append-to-body>
         <el-form :model="editForm" :rules="editRules" ref="editRef" label-width="80px">
@@ -113,10 +100,20 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, computed, ref } from 'vue'
+import { onMounted, reactive, computed, ref, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Location, Star, View, Service, Plus } from '@element-plus/icons-vue'
+import {
+    Money,        // 待付款
+    Van,          // 待发货
+    Goods,        // 待收货
+    CircleCheck,  // 已完成
+    Location,     // 收货地址
+    Star,         // 我的收藏
+    View,         // 浏览记录
+    Service,      // 联系客服
+    Plus          // 头像上传 +
+} from '@element-plus/icons-vue'
 import axios from 'axios'
 import request from '@/utils/request'
 
@@ -149,13 +146,21 @@ const handleAvatarError = () => {
     avatarUrl.value = 'https://picsum.photos/100/100?random=888'
 }
 
-/* 1. 定义响应式数组，badge 默认 0，等待接口回填 */
+/* 订单入口图标 */
 const orderTabs = reactive([
-    { label: '待付款', icon: 'el-icon-money', badge: 0 },
-    { label: '待发货', icon: 'el-icon-truck', badge: 0 },
-    { label: '待收货', icon: 'el-icon-box', badge: 0 },
-    { label: '已完成', icon: 'el-icon-circle-check', badge: 0 }
+    { label: '待付款', icon: markRaw(Money), badge: 0 },
+    { label: '待发货', icon: markRaw(Van), badge: 0 },
+    { label: '待收货', icon: markRaw(Goods), badge: 0 },
+    { label: '已完成', icon: markRaw(CircleCheck), badge: 0 }
 ])
+
+/* 功能菜单图标 */
+const menuList = [
+    { label: '收货地址', index: 'address', icon: markRaw(Location) },
+    { label: '我的收藏', index: 'collect', icon: markRaw(Star) },
+    { label: '浏览记录', index: 'track', icon: markRaw(View) },
+    { label: '联系客服', index: 'service', icon: markRaw(Service) }
+]
 
 /* 2. 映射后端字段 → 数组下标 */
 const badgeMap = ['unpaid', 'unship', 'unreceived', 'completed']
