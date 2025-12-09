@@ -270,10 +270,12 @@ const checkLogin = path => {
 
 <style scoped>
 .nav-header {
-    display: flex;
-    align-items: center;
+    height: 60px;   /* 60px */
+    flex-shrink: 0; /* 宽度不随内容变化而变化 */
+    display: flex;  /* 垂直居中 */
+    align-items: center;    /* 水平居中 */
     padding: 0 24px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .06);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .06); 
 }
 
 /* Logo 固定左侧 */
@@ -313,6 +315,11 @@ const checkLogin = path => {
     flex-shrink: 0;
     margin-left: auto;
 }
+/* .el-main {
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+} */
+
 .avatar-uploader ::v-deep .el-upload {
   border: 1px dashed #d9d9d9;
   border-radius: 6px;

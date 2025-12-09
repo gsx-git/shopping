@@ -193,6 +193,7 @@ const currentUser = (() => {
 /* ① 商品详情 */
 const fetchProduct = async () => {
   const id = route.params.id
+  console.log(route)
   try {
     const { data } = await request.get(`/api/product/list1/${id}`)
 
@@ -220,7 +221,6 @@ const fetchProduct = async () => {
 /* ② 商品评价 */
 const fetchReviews = async () => {
   const id = route.params.id
-  console.log(route.params)
   try {
     const { data } = await request.get(`/api/productComment/list/${id}`)
     reviews.value = (Array.isArray(data) ? data : data.data ?? []).map(r => ({
@@ -467,7 +467,6 @@ onMounted(async () => {
 
 .product-detail-main {
   background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
   padding: 20px;
 }
 

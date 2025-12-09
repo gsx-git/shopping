@@ -4,15 +4,22 @@
     <el-card class="order-card">
       <template #header>
         <div class="order-header">
-          <span>我的订单</span>
+          <span>我的订单<span style="font-size: 12px;color: #ff5000;">（点击订单编号查看订单详情）</span></span>
           <el-button type="text" @click="goBack" class="back-button">
             返回 <i class="el-icon-arrow-left"></i>
           </el-button>
         </div>
       </template>
       <el-table :data="orderList" row-key="id" show-overflow-tooltip>
-        <el-table-column label="订单编号" width="180">
+        <!-- <el-table-column label="订单编号" width="180">
           <template #default="{ row }">{{ row.orderNumber }}</template>
+        </el-table-column> -->
+        <el-table-column label="订单编号" width="180">
+          <template #default="{ row }">
+            <span style="color: #409eff; cursor: pointer;" @click="goOrderDetail(row)">
+              {{ row.orderNumber }}
+            </span>
+          </template>
         </el-table-column>
         <el-table-column label="订单状态" width="120">
           <template #default="{ row }">{{ row.status }}</template>
@@ -22,7 +29,7 @@
         </el-table-column>
         <el-table-column label="商品" min-width="220">
           <template #default="{ row }">
-            <div class="goods-box">
+            <div class="goods-box" @click="goProductDetail(row.productId)">
               <img :src="row.img" class="goods-img" />
               <div class="goods-title">{{ row.title }}</div>
             </div>
@@ -106,6 +113,7 @@ const fetchOrders = async () => {
     orderList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
       id: item.id,
       orderNumber: item.id, // 如果没有订单号，用 id 代替
+      productId: item.productId,
       statusNumber: item.status,
       status: statusMap[item.status] ?? '未知状态',
       date: item.createTime.slice(0, 3).join('-'), // 取年月日
@@ -156,7 +164,7 @@ const cancelOrder = async (row) => {
 /* 支付订单（待付款） */
 const payOrder = async (row) => {
   try {
-    await request.post('/api/order/update', { id:row.id, status: 2 })
+    await request.post('/api/order/update', { id: row.id, status: 2 })
     ElMessage.success('支付成功')
     await fetchOrders()
   } catch (e) {
@@ -167,7 +175,7 @@ const payOrder = async (row) => {
 /* 确认收货（待收货） */
 const confirmReceipt = async (row) => {
   try {
-    await request.post('/api/order/update',{ id:row.id, status: 4})
+    await request.post('/api/order/update', { id: row.id, status: 4 })
     ElMessage.success('已确认收货')
     await fetchOrders()
   } catch (e) {
@@ -183,12 +191,15 @@ onMounted(fetchOrders)
 const goBack = () => {
   router.back()
 }
+const goOrderDetail = (row) => {
+  router.push(`/user/orderdetail/${row.id}`)
+}
+const goProductDetail = (id) => router.push(`/product/${id}`)
 </script>
 
 <style scoped>
 .order-detail-main {
   background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
   padding: 20px;
 }
 

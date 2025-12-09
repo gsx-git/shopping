@@ -33,3 +33,6 @@ a,
     padding: 0 2rem;
   }
 } */
+
+/* 1. 全局 reset */
+html,body{height:100%;margin:0;overflow:hidden;}

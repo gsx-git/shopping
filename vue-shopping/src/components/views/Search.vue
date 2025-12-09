@@ -126,8 +126,8 @@ const goDetail = (id) => router.push(`/product/${id}`)
 }
 
 .search-main {
+  height: 688px;
   background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
   padding: 20px;
 }
 
@@ -136,9 +136,12 @@ const goDetail = (id) => router.push(`/product/${id}`)
 }
 
 .search-header {
-  display: flex;  /* ✅ 垂直居中 */
-  justify-content: space-between; /* ✅ 水平居中 */
-  align-items: center;  /* ✅ 垂直居中 */
+  display: flex;
+  /* ✅ 垂直居中 */
+  justify-content: space-between;
+  /* ✅ 水平居中 */
+  align-items: center;
+  /* ✅ 垂直居中 */
 }
 
 .back-button {
