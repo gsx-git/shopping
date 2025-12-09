@@ -87,7 +87,7 @@
 
 <script setup>
 /* ========== 引入 ========== */
-import { ref, computed, reactive, markRaw } from 'vue'
+import { onMounted, reactive, computed, ref, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -105,6 +105,8 @@ import {
     RefreshLeft,
     RefreshRight
 } from '@element-plus/icons-vue'
+import axios from 'axios'
+import request from '@/utils/request'
 
 /* ========== 基础数据 ========== */
 const router = useRouter()
@@ -126,6 +128,27 @@ const shop = ref({
     name: '超级卖家店铺',
     phone: '138****7777'
 })
+/* 查询当前用户的店铺信息 */
+const loadShop = async () => {
+  if (!user.value) return
+  try {
+    const res = await request.get(`/api/shop/list/${user.value.id}`)
+    if (res.code === 200 && res.data?.length) {
+      // 取第一家店铺（多数用户只有 1 家）
+      const shopInfo = res.data[0]
+      shop.value.name = shopInfo.name
+      shop.value.phone = shopInfo.phone
+      // 如有头像字段
+      if (shopInfo.avatar) {
+        avatarUrl.value = `${import.meta.env.VITE_BASE_URL}/api/shop/${shopInfo.id}/avatar`
+      }
+    } else {
+      ElMessage.info(res.msg || '您还未开设店铺')
+    }
+  } catch (e) {
+    ElMessage.error('店铺信息加载失败')
+  }
+}
 
 /* 头像 */
 const avatarUrl = ref(
@@ -164,6 +187,10 @@ const goProduct = idx => router.push(`/ushop/product/${idx}`)
 const goOrder = idx => router.push(`/ushop/order/${idx}`)
 const handleMenu = index => router.push(`/ushop/${index}`)
 const goShopHome = () => ElMessage.success('跳转到店铺首页（待实现）')
+
+onMounted(() => {
+  loadShop()   // ✅ 把店铺信息拉下来
+})
 </script>
 
 <style scoped>
