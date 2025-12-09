@@ -411,7 +411,7 @@ const createOrder = async () => {
       sku: { id: selectedSkuId.value },
       price: selectedSku.value.price,
       quantity: quantity.value,
-      address: { id: selectedAddrId.value }   // 后端接收地址 ID
+      userAddress: { id: selectedAddrId.value }   // 后端接收地址 ID
     })
     // 创建成功后拿到订单号
     orderId = data.orderId  // 后端返回的订单号
