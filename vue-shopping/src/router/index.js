@@ -16,7 +16,7 @@ const routes = [
       { path: 'user/collect', name: 'Collect', component: () => import('@/components/views/user/Collect.vue') },
       { path: 'user/track', name: 'Track', component: () => import('@/components/views/user/Track.vue') },
       { path: 'user/service', name: 'Service', component: () => import('@/components/views/user/Service.vue') },
-      { path: 'ushop', name: 'Ushop', component: () => import('@/components/views/Ushop.vue') },
+      { path: 'ushop', name: 'Ushop', component: () => import('@/components/views/Ushop/Ushop.vue') },
       { path: 'search', name: 'Search', component: () => import('@/components/views/Search.vue') },
       { path: 'product/:id', name: 'ProductDetail', component: () => import('@/components/views/ProductDetail.vue') },
     ]
