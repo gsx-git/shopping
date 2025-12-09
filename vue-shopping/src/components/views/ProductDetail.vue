@@ -102,6 +102,42 @@
         <el-button type="primary" @click="confirmBuy">立即下单</el-button>
       </template>
     </el-dialog>
+    <!-- ① 确认订单弹窗 -->
+    <el-dialog v-model="showConfirm" title="确认订单" width="520px" :close-on-click-modal="false">
+      <!-- 1. 收货地址 -->
+      <el-form label-width="80px">
+        <el-form-item label="收货地址">
+          <el-select v-model="selectedAddrId" placeholder="请选择收货地址" style="width: 280px">
+            <el-option v-for="a in addrList" :key="a.id" :label="`${a.receiver}  ${a.phone}  ${a.address}`"
+              :value="a.id" />
+          </el-select>
+          <el-button type="text" style="margin-left: 12px" @click="goAddAddress">
+            新增地址
+          </el-button>
+        </el-form-item>
+
+        <!-- 2. 商品信息（只读） -->
+        <el-form-item label="商品">
+          <span>{{ product.title }}</span>
+        </el-form-item>
+        <el-form-item label="规格">
+          <span>{{ fmtSpecs(selectedSku?.specs || '{}') }}</span>
+        </el-form-item>
+        <el-form-item label="数量">
+          <span>{{ quantity }}</span>
+        </el-form-item>
+
+        <!-- 3. 金额 -->
+        <el-form-item label="应付金额">
+          <span style="color: #ff5000; font-size: 18px">¥{{ payAmount }}</span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showConfirm = false">取消</el-button>
+        <el-button type="primary" @click="createOrder">提交订单</el-button>
+      </template>
+    </el-dialog>
     <!-- 支付弹窗 -->
     <el-dialog v-model="showPay" title="支付订单" width="400px" :close-on-click-modal="false">
       <div style="text-align:center;font-size:18px;margin-bottom:20px;">
@@ -128,21 +164,25 @@ const router = useRouter()
 const product = ref({})     // 商品详情信息
 const reviews = ref([])     // 商品评价列表
 const skuList = ref([])     // 当前商品SKU列表
+const selectedAddrId = ref(null)    // 选中的地址 ID
 
 // 用户交互状态
 const isFavorited = ref(false)  // 是否已收藏
 const selectedSkuId = ref(null) // 当前选中的SKU ID
 const quantity = ref(1)         // 选择的商品数量
+const addrList = ref([])            // 当前用户的收货地址列表
 
 // 弹窗显示控制
 const showSku = ref(false)  // 加入购物车规格选择弹窗
 const showBuy = ref(false)  // 立即购买规格选择弹窗
 const showPay = ref(false)  // 支付弹窗
+const showConfirm = ref(false)      // 控制确认订单弹窗
 
 // 支付相关
 const payAmount = ref(0)    // 待支付金额
 let orderId = null          // 待支付订单号
 let collectid = null        // 收藏项ID（用于取消收藏）
+
 
 /* 当前用户 */
 const currentUser = (() => {
@@ -308,7 +348,29 @@ const confirmAddCart = async () => {
   }
 }
 
-/* 打开购买弹窗（复用 skuList） */
+
+/* 拉取收货地址 */
+const fetchAddress = async () => {
+  if (!currentUser?.id) return
+  try {
+    const { data } = await request.get(`/api/useraddress/list/${currentUser.id}`)
+    addrList.value = (Array.isArray(data) ? data : data.data ?? [])
+      .map(item => ({
+        id: item.id,
+        receiver: item.receiver,
+        phone: item.phone,
+        address: `${item.province || ''}${item.city || ''}${item.detailAddress || ''}`.replace(/\s+/g, ''),
+        isDefault: item.isDefault
+      }))
+      .sort((a, b) => b.isDefault - a.isDefault)   // 默认地址排最前
+    // 默认选中默认地址
+    const def = addrList.value.find(a => a.isDefault)
+    selectedAddrId.value = def ? def.id : null
+  } catch {
+    ElMessage.error('获取收货地址失败')
+  }
+}
+/* 打开规格选择弹窗（复用 skuList） */
 const openBuy = () => {
   if (!currentUser?.id) {
     ElMessage.warning('请先登录')
@@ -321,10 +383,24 @@ const openBuy = () => {
   showBuy.value = true
 }
 
-/* 立即下单 → 生成待支付订单 */
+/* 点击「立即下单」后不再直接出支付弹窗，而是出确认订单弹窗 */
 const confirmBuy = async () => {
   if (!selectedSkuId.value) {
     ElMessage.warning('请选择规格')
+    return
+  }
+  // 先拉地址，再弹窗
+  await fetchAddress()
+  // 计算金额
+  payAmount.value = (selectedSku.value.price * quantity.value).toFixed(2)
+  showBuy.value = false // 关闭规格选择弹窗
+  showConfirm.value = true  // 弹窗确认订单弹窗
+}
+
+/* ===== 提交订单 ===== */
+const createOrder = async () => {
+  if (!selectedAddrId.value) {
+    ElMessage.warning('请选择收货地址')
     return
   }
   try {
@@ -333,23 +409,25 @@ const confirmBuy = async () => {
       shop: { id: product.value.shopId },
       product: { id: product.value.id },
       sku: { id: selectedSkuId.value },
-      price: product.value.price,
-      quantity: quantity.value
+      price: selectedSku.value.price,
+      quantity: quantity.value,
+      address: { id: selectedAddrId.value }   // 后端接收地址 ID
     })
-    orderId = data.orderId       // 后端返回
-    console.log(orderId)
-    payAmount.value = data.payAmount     // 应付金额
-    showBuy.value = false
-    showPay.value = true
+    // 创建成功后拿到订单号
+    orderId = data.orderId  // 后端返回的订单号
+    ElMessage.success('订单提交成功，即将跳转支付...')
+    showConfirm.value = false // 关闭确认订单弹窗
+    //继续弹出一个「支付弹窗」
+    showPay.value = true  // 显示支付弹窗
   } catch {
-    ElMessage.error('下单失败')
+    ElMessage.error('提交订单失败')
   }
 }
 
 /* 支付：改为已支付并关闭弹窗 */
 const doPay = async () => {
   try {
-    await request.post('/api/order/update', { id:orderId, status: 2 })
+    await request.post('/api/order/update', { id: orderId, status: 2 })
     ElMessage.success('支付成功')
     showPay.value = false
     // 可跳转订单页
@@ -364,6 +442,13 @@ const cancelPay = () => {
   showPay.value = false
   // 订单状态保持“待支付”，可后续继续支付
 }
+
+/* 新增地址 */
+const goAddAddress = () => {
+  // 跳到地址管理页，带返回逻辑
+  router.push('/user/address?back=product-' + product.value.id)
+}
+
 /* 返回 */
 const goBack = () => router.back()
 
