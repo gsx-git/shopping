@@ -57,6 +57,18 @@
 
     <!-- 结算确认弹窗 -->
     <el-dialog v-model="showCheckout" title="确认订单" width="480px">
+      <el-form label-width="80px">
+        <el-form-item label="收货地址">
+          <el-select v-model="selectedAddrId" placeholder="请选择收货地址" style="width: 280px">
+            <el-option v-for="a in addrList" :key="a.id" :label="`${a.receiver}  ${a.phone}  ${a.address}`"
+              :value="a.id" />
+          </el-select>
+          <el-button type="text" style="margin-left: 12px" @click="goAddAddress">
+            新增地址
+          </el-button>
+        </el-form-item>
+      </el-form>
+
       <el-table :data="checkoutList" size="small" :show-header="false">
         <el-table-column label="商品">
           <template #default="{ row }">{{ row.title }}</template>
@@ -109,6 +121,9 @@ const showPay = ref(false)
 const payAmount = ref(0)
 const checkoutList = ref([])
 let orderIds = [] // 本次生成的待支付订单号数组（后端返回）
+
+const selectedAddrId = ref(null)    // 选中的地址 ID
+const addrList = ref([])            // 当前用户的收货地址列表
 
 /* 购物车列表 */
 const cartList = ref([])
@@ -197,6 +212,28 @@ const delItem = async (cartId) => {
   }
 }
 
+/* 拉取收货地址 */
+const fetchAddress = async () => {
+  if (!user?.id) return
+  try {
+    const { data } = await request.get(`/api/useraddress/list/${user.id}`)
+    addrList.value = (Array.isArray(data) ? data : data.data ?? [])
+      .map(item => ({
+        id: item.id,
+        receiver: item.receiver,
+        phone: item.phone,
+        address: `${item.province || ''}${item.city || ''}${item.detailAddress || ''}`.replace(/\s+/g, ''),
+        isDefault: item.isDefault
+      }))
+      .sort((a, b) => b.isDefault - a.isDefault)   // 默认地址排最前
+    // 默认选中默认地址
+    const def = addrList.value.find(a => a.isDefault)
+    selectedAddrId.value = def ? def.id : null
+  } catch {
+    ElMessage.error('获取收货地址失败')
+  }
+}
+
 /* 合计金额 */
 const totalPrice = computed(() =>
   cartList.value.reduce((sum, v) => sum + v.price * v.quantity, 0).toFixed(2)
@@ -204,12 +241,14 @@ const totalPrice = computed(() =>
 
 /* 去结算 */
 /* 打开结算确认弹窗 */
-const goCheckout = () => {
+const goCheckout = async () => {
   if (!cartList.value.length) return
   checkoutList.value = cartList.value.map(item => ({
     ...item,
     specs: (skuMap.value[item.productId] || []).find(s => s.id === item.sku)?.specs || '{}'
   }))
+  // 先拉地址，再弹窗
+  await fetchAddress()
   showCheckout.value = true
 }
 
@@ -220,7 +259,10 @@ const confirmCheckout = async () => {
   const items = cartList.value
   orderIds.length = 0 // 清空
   let total = 0
-
+  if (!selectedAddrId.value) {
+    ElMessage.warning('请选择收货地址')
+    return
+  }
   try {
     for (const item of items) {
       // 逐条下单
@@ -230,16 +272,17 @@ const confirmCheckout = async () => {
         product: { id: item.productId },
         sku: { id: item.sku },
         price: item.price,
-        quantity: item.quantity
+        quantity: item.quantity,
+        userAddress: { id: selectedAddrId.value }   // 后端接收地址 ID
       })
       orderIds.push(data.orderId) // 单条订单号
       total += item.price * item.quantity
     }
 
     // 全部成功
-    payAmount.value = total.toFixed(2)
-    showCheckout.value = false
-    showPay.value = true
+    payAmount.value = total.toFixed(2)  // 应付总金额
+    showCheckout.value = false  // 关闭确认订单弹窗
+    showPay.value = true  // 显示支付弹窗
   } catch (e) {
     ElMessage.error('下单失败，已停止继续提交')
     // 可选择把已生成的订单自动关闭（调取消接口）

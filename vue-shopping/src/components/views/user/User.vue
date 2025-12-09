@@ -271,11 +271,11 @@ onMounted(() => {
 })
 const goOrderDetail = idx => {
     // const status = ['待付款', '待发货', '待收货', '已完成'][idx]
-    router.push(`/user/order/${idx + 1}`)
+    router.push(`/user/Orders/${idx + 1}`)
 }
 
 const goAllOrders = () => {
-    router.push('/user/order/0')
+    router.push('/user/Orders/0')
 }
 
 /* 功能菜单 */

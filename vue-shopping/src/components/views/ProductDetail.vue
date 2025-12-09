@@ -417,7 +417,6 @@ const createOrder = async () => {
     orderId = data.orderId  // 后端返回的订单号
     ElMessage.success('订单提交成功，即将跳转支付...')
     showConfirm.value = false // 关闭确认订单弹窗
-    //继续弹出一个「支付弹窗」
     showPay.value = true  // 显示支付弹窗
   } catch {
     ElMessage.error('提交订单失败')
