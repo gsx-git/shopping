@@ -14,9 +14,9 @@
 
                 <!-- 右侧按钮 -->
                 <div class="btn-group">
-                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;font-size: 14px;"
+                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;"
                         @click="openEdit">修改资料</el-button>
-                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;font-size: 14px;"
+                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;"
                         @click="doLogout">退出登录</el-button>
                 </div>
             </div>
