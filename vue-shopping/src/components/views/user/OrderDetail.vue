@@ -28,6 +28,8 @@
                     </el-descriptions-item>
                     <el-descriptions-item label="下单时间">{{ formatTime(order.createTime) }}</el-descriptions-item>
                     <el-descriptions-item label="支付时间">{{ formatTime(order.payTime) }}</el-descriptions-item>
+                    <el-descriptions-item label="发货时间">{{ formatTime(order.deliverTime) }}</el-descriptions-item>
+                    <el-descriptions-item label="收货时间">{{ formatTime(order.receiveTime) }}</el-descriptions-item>
                     <el-descriptions-item label="商品名称">{{ order.productName }}</el-descriptions-item>
                     <el-descriptions-item label="商品规格">{{ fmtSpecs(order.sku.specs) }}</el-descriptions-item>
                     <el-descriptions-item label="单价">¥{{ order.price }}</el-descriptions-item>
