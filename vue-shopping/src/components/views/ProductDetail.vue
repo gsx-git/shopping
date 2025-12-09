@@ -160,6 +160,7 @@ const fetchProduct = async () => {
     product.value = {
       id: data.id,
       title: data.name,
+      shopId: data.shopId,
       price: data.price,
       description: data.subtitle || data.description,
       sales: data.sales || 0,
@@ -327,16 +328,19 @@ const confirmBuy = async () => {
     return
   }
   try {
-    const { data } = await request.post('/api/order/create', {
-      userId: currentUser.id,
-      productId: product.value.id,
-      skuId: selectedSkuId.value,
+    const { data } = await request.post('/api/order/add', {
+      user: { id: currentUser.id },
+      shop: { id: product.value.shopId },
+      product: { id: product.value.id },
+      sku: { id: selectedSkuId.value },
+      price: product.value.price,
       quantity: quantity.value
     })
-    orderId   = data.orderId          // 后端返回
-    payAmount.value = data.amount     // 应付金额
-    showBuy.value  = false
-    showPay.value  = true
+    orderId = data.orderId       // 后端返回
+    console.log(orderId)
+    payAmount.value = data.payAmount     // 应付金额
+    showBuy.value = false
+    showPay.value = true
   } catch {
     ElMessage.error('下单失败')
   }
@@ -345,11 +349,11 @@ const confirmBuy = async () => {
 /* 支付：改为已支付并关闭弹窗 */
 const doPay = async () => {
   try {
-    await request.post('/api/order/pay', { orderId })
+    await request.post('/api/order/update', { id:orderId, status: 2 })
     ElMessage.success('支付成功')
     showPay.value = false
     // 可跳转订单页
-    router.push('/order')
+    router.push(`/product/${product.id}`)
   } catch {
     ElMessage.error('支付失败')
   }

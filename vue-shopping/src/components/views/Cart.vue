@@ -12,7 +12,7 @@
       <el-card>
         <el-table :data="cartList" row-key="id" show-overflow-tooltip>
           <el-table-column label="商品" min-width="220">
-            <template #default="{ row }" >
+            <template #default="{ row }">
               <div class="goods-box" @click="goDetail(row.productId)">
                 <img :src="row.img" class="goods-img" />
                 <div class="goods-title">{{ row.title }}</div>
@@ -34,11 +34,11 @@
           </el-table-column>
           <el-table-column label="数量" width="160">
             <template #default="{ row }">
-              <el-input-number v-model="row.num" :min="1" :max="99" size="small" @change="updateCart(row)" />
+              <el-input-number v-model="row.quantity" :min="1" :max="99" size="small" @change="updateCart(row)" />
             </template>
           </el-table-column>
           <el-table-column label="小计" min-width="100">
-            <template #default="{ row }">¥{{ (row.price * row.num).toFixed(2) }}</template>
+            <template #default="{ row }">¥{{ (row.price * row.quantity).toFixed(2) }}</template>
           </el-table-column>
           <el-table-column label="操作" min-width="80">
             <template #default="{ row }">
@@ -54,6 +54,45 @@
         </div>
       </el-card>
     </div>
+
+    <!-- 结算确认弹窗 -->
+    <el-dialog v-model="showCheckout" title="确认订单" width="480px">
+      <el-table :data="checkoutList" size="small" :show-header="false">
+        <el-table-column label="商品">
+          <template #default="{ row }">{{ row.title }}</template>
+        </el-table-column>
+        <el-table-column label="规格" width="120">
+          <template #default="{ row }">{{ fmtSpecs(row.specs) }}</template>
+        </el-table-column>
+        <el-table-column label="单价" width="80">
+          <template #default="{ row }">¥{{ row.price }}</template>
+        </el-table-column>
+        <el-table-column label="数量" width="80">
+          <template #default="{ row }">{{ row.num }}</template>
+        </el-table-column>
+        <el-table-column label="小计" width="100">
+          <template #default="{ row }">¥{{ (row.price * row.quantity).toFixed(2) }}</template>
+        </el-table-column>
+      </el-table>
+      <div style="text-align:right;margin-top:15px;font-size:18px;color:#ff5000">
+        合计：<strong>¥{{ totalPrice }}</strong>
+      </div>
+      <template #footer>
+        <el-button @click="showCheckout = false">再想想</el-button>
+        <el-button type="primary" @click="confirmCheckout">立即下单</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 支付弹窗 -->
+    <el-dialog v-model="showPay" title="支付订单" width="400px">
+      <div style="text-align:center;font-size:18px;margin-bottom:20px;">
+        应付金额：<strong style="color:#ff5000">¥{{ payAmount }}</strong>
+      </div>
+      <div style="text-align:center;">
+        <el-button type="success" @click="doPay">支付</el-button>
+        <el-button @click="cancelPay">取消</el-button>
+      </div>
+    </el-dialog>
   </el-main>
 </template>
 
@@ -64,6 +103,12 @@ import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 
 const router = useRouter()
+/* 结算相关状态 */
+const showCheckout = ref(false)
+const showPay = ref(false)
+const payAmount = ref(0)
+const checkoutList = ref([])
+let orderIds = [] // 本次生成的待支付订单号数组（后端返回）
 
 /* 购物车列表 */
 const cartList = ref([])
@@ -104,8 +149,9 @@ const loadCart = async () => {
       id: item.id,
       productId: item.productId,
       title: item.productName,
+      shopId: item.shopId,
       price: item.price,
-      num: item.quantity,
+      quantity: item.quantity,
       sku: item.skuId,
       img: item.image
         ? `data:image/png;base64,${item.image}`
@@ -153,13 +199,75 @@ const delItem = async (cartId) => {
 
 /* 合计金额 */
 const totalPrice = computed(() =>
-  cartList.value.reduce((sum, v) => sum + v.price * v.num, 0).toFixed(2)
+  cartList.value.reduce((sum, v) => sum + v.price * v.quantity, 0).toFixed(2)
 )
 
 /* 去结算 */
+/* 打开结算确认弹窗 */
 const goCheckout = () => {
   if (!cartList.value.length) return
-  router.push('/checkout')
+  checkoutList.value = cartList.value.map(item => ({
+    ...item,
+    specs: (skuMap.value[item.productId] || []).find(s => s.id === item.sku)?.specs || '{}'
+  }))
+  showCheckout.value = true
+}
+
+/* 确认下单：批量生成订单 */
+/* 确认下单：循环调用 /api/order/add */
+const confirmCheckout = async () => {
+  if (!user?.id) return
+  const items = cartList.value
+  orderIds.length = 0 // 清空
+  let total = 0
+
+  try {
+    for (const item of items) {
+      // 逐条下单
+      const { data } = await request.post('/api/order/add', {
+        user: { id: user.id },
+        shop: { id: item.shopId },
+        product: { id: item.productId },
+        sku: { id: item.sku },
+        price: item.price,
+        quantity: item.quantity
+      })
+      orderIds.push(data.orderId) // 单条订单号
+      total += item.price * item.quantity
+    }
+
+    // 全部成功
+    payAmount.value = total.toFixed(2)
+    showCheckout.value = false
+    showPay.value = true
+  } catch (e) {
+    ElMessage.error('下单失败，已停止继续提交')
+    // 可选择把已生成的订单自动关闭（调取消接口）
+    // if (orderIds.length) {
+    //   await request.post('/api/order/batchCancel', { orderIds }).catch(() => { })
+    // }
+  }
+}
+/* 支付：批量改为已支付 */
+const doPay = async () => {
+  try {
+    // 逐条改为已支付
+    for (const oid of orderIds) {
+      await request.post('/api/order/update', { id: oid, status: 2 })
+    }
+    ElMessage.success('支付成功')
+    showPay.value = false
+    await loadCart()
+    router.push('/cart')   // 建议跳到订单页
+  } catch (e) {
+    ElMessage.error(e.msg || '支付失败')
+    console.error(e)
+  }
+}
+
+/* 取消支付：仅关闭弹窗，订单保持待支付 */
+const cancelPay = () => {
+  showPay.value = false
 }
 const goDetail = (id) => router.push(`/product/${id}`)
 /* 首次加载 */
