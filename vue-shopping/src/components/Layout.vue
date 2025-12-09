@@ -258,6 +258,7 @@ const goHome = () => router.push('/')
 const goCart = () => checkLogin('/cart')
 const goUser = () => checkLogin('/user')
 const goUshop = () => checkLogin('/ushop')
+/* 判断是否登录 */
 const checkLogin = path => {
     if (localStorage.getItem('system-user')) router.push(path)
     else {
