@@ -1,41 +1,44 @@
 <template>
-    <el-header class="nav-header">
-        <!-- 左侧 Logo -->
-        <div class="logo">🛒 超级商城</div>
-        <!-- 新增：登录/注册 or 欢迎/退出 -->
-        <div class="auth-bar">
-            <template v-if="!userInfo">
-                <span class="auth-btn" @click="showLogin">登录</span>
-                <span style="margin:0 6px;">/</span>
-                <span class="auth-btn" @click="showRegister">注册</span>
-            </template>
-
-            <template v-else>
-                <span style="margin-right:12px;color:#ff5000;">
-                    您好，{{ userInfo.username || userInfo.phone }}
-                </span>
-                <span class="auth-btn" @click="logout">退出</span>
-            </template>
-        </div>
-        <!-- 搜索框 -->
-        <div class="search-wrap">
-            <el-input v-model="searchKey" placeholder="搜你喜欢" clearable size="large" style="width: 380px;"
-                @keyup.enter="handleSearch">
-                <template #append>
-                    <el-button type="primary" :icon="Search" @click="handleSearch" />
+    <el-container direction="vertical" style="height:98vh;">
+        <el-header class="nav-header">
+            <!-- 左侧 Logo -->
+            <div class="logo">🛒 超级商城</div>
+            <!-- 新增：登录/注册 or 欢迎/退出 -->
+            <div class="auth-bar">
+                <template v-if="!userInfo">
+                    <span class="auth-btn" @click="showLogin">登录</span>
+                    <span style="margin:0 6px;">/</span>
+                    <span class="auth-btn" @click="showRegister">注册</span>
                 </template>
-            </el-input>
-        </div>
-        <el-menu mode="horizontal" :ellipsis="false" :router="false" background-color="#fff" text-color="#333"
-            :default-active="activeIndex" active-text-color="#ff5000" class="right-menu">
-            <el-menu-item index="1" @click="goHome">首页</el-menu-item>
-            <el-menu-item index="2" @click="goCart">购物车</el-menu-item>
-            <el-menu-item index="3" @click="goUser">我的</el-menu-item>
-            <el-menu-item index="4" @click="goUshop">我的店铺</el-menu-item>
-        </el-menu>
-    </el-header>
 
-    <el-main><router-view /></el-main>
+                <template v-else>
+                    <span style="margin-right:12px;color:#ff5000;">
+                        您好，{{ userInfo.username || userInfo.phone }}
+                    </span>
+                    <span class="auth-btn" @click="logout">退出</span>
+                </template>
+            </div>
+            <!-- 搜索框 -->
+            <div class="search-wrap">
+                <el-input v-model="searchKey" placeholder="搜你喜欢" clearable size="large" style="width: 380px;"
+                    @keyup.enter="handleSearch">
+                    <template #append>
+                        <el-button type="primary" :icon="Search" @click="handleSearch" />
+                    </template>
+                </el-input>
+            </div>
+            <el-menu mode="horizontal" :ellipsis="false" :router="false" background-color="#fff" text-color="#333"
+                :default-active="activeIndex" active-text-color="#ff5000" class="right-menu">
+                <el-menu-item index="1" @click="goHome">首页</el-menu-item>
+                <el-menu-item index="2" @click="goCart">购物车</el-menu-item>
+                <el-menu-item index="3" @click="goUser">我的</el-menu-item>
+                <el-menu-item index="4" @click="goUshop">我的店铺</el-menu-item>
+            </el-menu>
+        </el-header>
+
+        <el-main style="height:0; flex:1; overflow-y:auto;"><router-view /></el-main>
+    </el-container>
+
 
     <!-- 登录弹窗 -->
     <el-dialog v-model="loginVisible" title="登录" width="400px" append-to-body>
@@ -153,18 +156,18 @@ const registerForm = reactive({
 })
 /* 头像上传前校验 */
 const beforeAvatar = (rawFile) => {
-  const allow = ['image/jpeg', 'image/jpg', 'image/png']
-  if (!allow.includes(rawFile.type)) {
-    ElMessage.error('头像只能是 JPG / PNG 格式')
+    const allow = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allow.includes(rawFile.type)) {
+        ElMessage.error('头像只能是 JPG / PNG 格式')
+        return false
+    }
+    if (rawFile.size / 1024 / 1024 > 2) {
+        ElMessage.error('头像大小不能超过 2MB')
+        return false
+    }
+    registerForm.avatarFile = rawFile
+    registerForm.avatar = URL.createObjectURL(rawFile)
     return false
-  }
-  if (rawFile.size / 1024 / 1024 > 2) {
-    ElMessage.error('头像大小不能超过 2MB')
-    return false
-  }
-  registerForm.avatarFile = rawFile
-  registerForm.avatar = URL.createObjectURL(rawFile)
-  return false
 }
 
 /* el-upload 占位函数（手动上传必须） */
@@ -197,27 +200,27 @@ const registerRules = reactive({
 
 /* 注册提交 */
 const confirmRegister = async () => {
-  const valid = await registerRef.value.validate();
-  if (!valid) return;
+    const valid = await registerRef.value.validate();
+    if (!valid) return;
 
-  const fd = new FormData();
-  if (registerForm.avatarFile) fd.append('avatar', registerForm.avatarFile);
+    const fd = new FormData();
+    if (registerForm.avatarFile) fd.append('avatar', registerForm.avatarFile);
 
-  const { avatar, avatarFile, ...raw } = registerForm;
-  fd.append('user', new Blob([JSON.stringify(raw)], { type: 'application/json' }));
+    const { avatar, avatarFile, ...raw } = registerForm;
+    fd.append('user', new Blob([JSON.stringify(raw)], { type: 'application/json' }));
 
-  /* ❶ 用原生 axios ❷ 不手动写 Content-Type */
-  axios.post(`${import.meta.env.VITE_BASE_URL}/api/user/register`, fd)
-       .then(res => {
-         if (res.data.code === 200) {
-           ElMessage.success('注册成功');
-           registerVisible.value = false;
-           loginVisible.value = true;
-         } else {
-           ElMessage.error(res.data.msg || '注册失败');
-         }
-       })
-       .catch(() => ElMessage.error('网络异常'));
+    /* ❶ 用原生 axios ❷ 不手动写 Content-Type */
+    axios.post(`${import.meta.env.VITE_BASE_URL}/api/user/register`, fd)
+        .then(res => {
+            if (res.data.code === 200) {
+                ElMessage.success('注册成功');
+                registerVisible.value = false;
+                loginVisible.value = true;
+            } else {
+                ElMessage.error(res.data.msg || '注册失败');
+            }
+        })
+        .catch(() => ElMessage.error('网络异常'));
 };
 const showRegister = () => {
     loginVisible.value = false
@@ -270,12 +273,16 @@ const checkLogin = path => {
 
 <style scoped>
 .nav-header {
-    height: 60px;   /* 60px */
-    flex-shrink: 0; /* 宽度不随内容变化而变化 */
-    display: flex;  /* 垂直居中 */
-    align-items: center;    /* 水平居中 */
+    height: 60px;
+    /* 60px */
+    flex-shrink: 0;
+    /* 宽度不随内容变化而变化 */
+    display: flex;
+    /* 垂直居中 */
+    align-items: center;
+    /* 水平居中 */
     padding: 0 24px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, .06); 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .06);
 }
 
 /* Logo 固定左侧 */
@@ -315,31 +322,31 @@ const checkLogin = path => {
     flex-shrink: 0;
     margin-left: auto;
 }
-/* .el-main {
-  height: calc(100vh - 100px);
-  overflow-y: auto;
-} */
+
+.el-main {}
 
 .avatar-uploader ::v-deep .el-upload {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
 .avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
+    font-size: 28px;
+    color: #8c939d;
 }
+
 .avatar {
-  width: 100px;
-  height: 100px;
-  display: block;
-  object-fit: cover;
+    width: 100px;
+    height: 100px;
+    display: block;
+    object-fit: cover;
 }
 </style>
