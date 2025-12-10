@@ -271,9 +271,6 @@ const beforeAvatar = file => {
 }
 const dummyRequest = () => { } // el-upload 要求
 
-onMounted(() => {
-    loadBadge()
-})
 const goOrderDetail = idx => {
     // const status = ['待付款', '待发货', '待收货', '已完成'][idx]
     router.push(`/user/Orders/${idx + 1}`)
@@ -294,6 +291,10 @@ const doLogout = () => {
     ElMessage.success('已退出登录')
     router.replace('/')
 }
+
+onMounted(() => {
+    loadBadge()
+})
 </script>
 
 <style scoped>
