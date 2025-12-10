@@ -52,7 +52,7 @@
         </template>
     </el-dialog>
 
-    <!-- 注册弹窗 -->
+    <!-- 用户注册弹窗 -->
     <el-dialog v-model="registerVisible" title="注册" width="420px" append-to-body>
         <el-form :model="registerForm" :rules="registerRules" ref="registerRef" label-width="80px">
             <!-- 1. 头像上传 -->
@@ -86,6 +86,49 @@
             <el-button type="primary" @click="confirmRegister">注册</el-button>
         </template>
     </el-dialog>
+
+    <!-- 店铺注册弹窗 -->
+    <el-dialog v-model="shopRegisterVisible" title="开设店铺" width="480px" append-to-body>
+        <el-form :model="shopForm" :rules="shopRules" ref="shopRegisterRef" label-width="100px">
+            <!-- logo -->
+            <el-form-item label="店铺Logo">
+                <el-upload class="avatar-uploader" :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
+                    :before-upload="beforeLogo">
+                    <img v-if="logoUrl" :src="logoUrl" class="avatar" />
+                    <el-icon v-else class="avatar-uploader-icon">
+                        <Plus />
+                    </el-icon>
+                </el-upload>
+            </el-form-item>
+
+            <!-- 营业执照 -->
+            <el-form-item label="营业执照">
+                <el-upload class="avatar-uploader" :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
+                    :before-upload="beforeLicense">
+                    <img v-if="licenseUrl" :src="licenseUrl" class="avatar" />
+                    <el-icon v-else class="avatar-uploader-icon">
+                        <Plus />
+                    </el-icon>
+                </el-upload>
+            </el-form-item>
+
+            <el-form-item label="店铺名称" prop="name">
+                <el-input v-model="shopForm.name" placeholder="2-20个字" />
+            </el-form-item>
+            <el-form-item label="店铺描述" prop="description">
+                <el-input v-model="shopForm.description" type="textarea" :rows="3" placeholder="简单介绍一下你的店铺" />
+            </el-form-item>
+            <el-form-item label="身份证号" prop="idcardNo">
+                <el-input v-model="shopForm.idcardNo" placeholder="店主身份证号" />
+            </el-form-item>
+        </el-form>
+
+        <template #footer>
+            <el-button @click="shopRegisterVisible = false">取消</el-button>
+            <el-button type="primary" @click="confirmShopRegister">提交</el-button>
+        </template>
+    </el-dialog>
+
 </template>
 
 <script setup>
@@ -107,14 +150,192 @@ const userInfo = computed(() => {
 
 /* ---------- 搜索 ---------- */
 const searchKey = ref('')
-const handleSearch = () => {
-    const key = searchKey.value.trim()
-    if (!key) return ElMessage.warning('请输入搜索关键词')
-    router.push({ path: '/search', query: { q: key } })
-}
+
 /* ---------- 路由 ---------- */
 const route = useRoute()
 const router = useRouter()
+
+/* ---------- 用户注册 ---------- */
+const registerVisible = ref(false)
+const registerRef = ref()
+const registerForm = reactive({
+    username: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    avatar: '',        // 新增：头像预览地址
+    avatarFile: null   // 新增：真正的 File 对象
+})
+
+/* 头像上传前校验 */
+const beforeAvatar = (rawFile) => {
+    const allow = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allow.includes(rawFile.type)) {
+        ElMessage.error('头像只能是 JPG / PNG 格式')
+        return false
+    }
+    if (rawFile.size / 1024 / 1024 > 2) {
+        ElMessage.error('头像大小不能超过 2MB')
+        return false
+    }
+    registerForm.avatarFile = rawFile
+    registerForm.avatar = URL.createObjectURL(rawFile)
+    return false
+}
+
+/* 上传占位函数 */
+const dummyRequest = () => { }
+
+/* 确认密码校验 */
+const validateConfirm = (_, value, callback) => {
+    if (value !== registerForm.password) callback(new Error('两次密码输入不一致'))
+    else callback()
+}
+
+/* 验证规则 */
+const registerRules = reactive({
+    username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+    phone: [
+        { required: true, message: '请输入手机号', trigger: 'blur' },
+        { pattern: /^1[3-9]\d{9}$/, message: '手机号格式错误', trigger: 'blur' }
+    ],
+    email: [
+        { required: true, message: '请输入邮箱', trigger: 'blur' },
+        { type: 'email', message: '邮箱格式错误', trigger: 'blur' }
+    ],
+    password: [
+        { required: true, message: '请输入密码', trigger: 'blur' },
+        { min: 6, max: 20, message: '长度 6-20 位', trigger: 'blur' }
+    ],
+    confirmPassword: [
+        { required: true, message: '请再次输入密码', trigger: 'blur' },
+        { validator: validateConfirm, trigger: 'blur' }
+    ]
+})
+
+/* ---------- 店铺注册 ---------- */
+const shopForm = reactive({
+    name: '',
+    description: '',
+    idcardNo: '',
+    logoFile: null,      // 真正的 File
+    licenseFile: null    // 真正的 File
+})
+const shopRules = reactive({
+    name: [{ required: true, message: '请输入店铺名称', trigger: 'blur' }],
+    description: [{ required: true, message: '请输入店铺描述', trigger: 'blur' }],
+    idcardNo: [
+        { required: true, message: '请输入身份证号', trigger: 'blur' },
+        {
+            pattern: /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])\d{2}\d{3}[\dX]$/,
+            message: '身份证号格式错误', trigger: 'blur'
+        }
+    ]
+})
+const shopRegisterVisible = ref(false)
+const shopRegisterRef = ref()
+
+const logoUrl = ref('')
+const licenseUrl = ref('')
+
+/* 店铺logo上传前校验 */
+const beforeLogo = (rawFile) => {
+    const allow = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allow.includes(rawFile.type)) {
+        ElMessage.error('Logo 只能是 JPG / PNG 格式')
+        return false
+    }
+    if (rawFile.size / 1024 / 1024 > 2) {
+        ElMessage.error('Logo 大小不能超过 2MB')
+        return false
+    }
+    shopForm.logoFile = rawFile
+    logoUrl.value = URL.createObjectURL(rawFile)
+    return false
+}
+
+/* 营业执照上传前校验 */
+const beforeLicense = (rawFile) => {
+  const allow = ['image/jpeg','image/jpg','image/png']
+  if (!allow.includes(rawFile.type)) {
+    ElMessage.error('营业执照只能是 JPG / PNG 格式')
+    return false
+  }
+  if (rawFile.size / 1024 / 1024 > 5) {
+    ElMessage.error('营业执照大小不能超过 5MB')
+    return false
+  }
+  shopForm.licenseFile = rawFile
+  licenseUrl.value = URL.createObjectURL(rawFile)
+  return false
+}
+
+/* ---------- 用户注册弹窗 ---------- */
+const showRegister = () => {
+    loginVisible.value = false
+    registerVisible.value = true
+}
+
+/* 用户注册提交 */
+const confirmRegister = async () => {
+    const valid = await registerRef.value.validate();
+    if (!valid) return;
+
+    const fd = new FormData();
+    if (registerForm.avatarFile) fd.append('avatar', registerForm.avatarFile);
+
+    const { avatar, avatarFile, ...raw } = registerForm;
+    fd.append('user', new Blob([JSON.stringify(raw)], { type: 'application/json' }));
+
+    /* ❶ 用原生 axios ❷ 不手动写 Content-Type */
+    axios.post(`${import.meta.env.VITE_BASE_URL}/api/user/register`, fd)
+        .then(res => {
+            if (res.data.code === 200) {
+                ElMessage.success('注册成功');
+                registerVisible.value = false;
+                loginVisible.value = true;
+            } else {
+                ElMessage.error(res.data.msg || '注册失败');
+            }
+        })
+        .catch(() => ElMessage.error('网络异常'));
+};
+
+/* ---------- 店铺注册 ---------- */
+const confirmShopRegister = async () => {
+    await shopRegisterRef.value.validate()
+    if (!shopForm.logoFile) return ElMessage.warning('请上传 Logo')
+    if (!shopForm.licenseFile) return ElMessage.warning('请上传营业执照')
+
+    const fd = new FormData()
+    fd.append('logo', shopForm.logoFile)
+    fd.append('licenseUrl', shopForm.licenseFile)
+
+    const dto = {
+        userId: userInfo.value.id,
+        name: shopForm.name,
+        description: shopForm.description,
+        idcardNo: shopForm.idcardNo
+    }
+    fd.append('shopCreateDTO', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
+
+    try {
+        const res = await axios.post(
+            `${import.meta.env.VITE_BASE_URL}/api/shop/add`,
+            fd
+        )
+        if (res.data.code === 200) {
+            ElMessage.success('店铺创建成功，等待审核')
+            shopRegisterVisible.value = false
+            router.push('/ushop')   // 直接进店铺后台
+        } else {
+            ElMessage.error(res.data.msg || '创建失败')
+        }
+    } catch {
+        ElMessage.error('网络异常')
+    }
+}
 
 /* ---------- 登录 ---------- */
 const loginVisible = ref(false)
@@ -142,91 +363,8 @@ const showLogin = () => {
     registerVisible.value = false
     loginVisible.value = true
 }
-/* ---------- 注册 ---------- */
-const registerVisible = ref(false)
-const registerRef = ref()
-const registerForm = reactive({
-    username: '',
-    phone: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    avatar: '',        // 新增：头像预览地址
-    avatarFile: null   // 新增：真正的 File 对象
-})
-/* 头像上传前校验 */
-const beforeAvatar = (rawFile) => {
-    const allow = ['image/jpeg', 'image/jpg', 'image/png']
-    if (!allow.includes(rawFile.type)) {
-        ElMessage.error('头像只能是 JPG / PNG 格式')
-        return false
-    }
-    if (rawFile.size / 1024 / 1024 > 2) {
-        ElMessage.error('头像大小不能超过 2MB')
-        return false
-    }
-    registerForm.avatarFile = rawFile
-    registerForm.avatar = URL.createObjectURL(rawFile)
-    return false
-}
 
-/* el-upload 占位函数（手动上传必须） */
-const dummyRequest = () => { }
-// 自定义二次密码校验
-const validateConfirm = (_, value, callback) => {
-    if (value !== registerForm.password) callback(new Error('两次密码输入不一致'))
-    else callback()
-}
-
-const registerRules = reactive({
-    username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-    phone: [
-        { required: true, message: '请输入手机号', trigger: 'blur' },
-        { pattern: /^1[3-9]\d{9}$/, message: '手机号格式错误', trigger: 'blur' }
-    ],
-    email: [
-        { required: true, message: '请输入邮箱', trigger: 'blur' },
-        { type: 'email', message: '邮箱格式错误', trigger: 'blur' }
-    ],
-    password: [
-        { required: true, message: '请输入密码', trigger: 'blur' },
-        { min: 6, max: 20, message: '长度 6-20 位', trigger: 'blur' }
-    ],
-    confirmPassword: [
-        { required: true, message: '请再次输入密码', trigger: 'blur' },
-        { validator: validateConfirm, trigger: 'blur' }
-    ]
-})
-
-/* 注册提交 */
-const confirmRegister = async () => {
-    const valid = await registerRef.value.validate();
-    if (!valid) return;
-
-    const fd = new FormData();
-    if (registerForm.avatarFile) fd.append('avatar', registerForm.avatarFile);
-
-    const { avatar, avatarFile, ...raw } = registerForm;
-    fd.append('user', new Blob([JSON.stringify(raw)], { type: 'application/json' }));
-
-    /* ❶ 用原生 axios ❷ 不手动写 Content-Type */
-    axios.post(`${import.meta.env.VITE_BASE_URL}/api/user/register`, fd)
-        .then(res => {
-            if (res.data.code === 200) {
-                ElMessage.success('注册成功');
-                registerVisible.value = false;
-                loginVisible.value = true;
-            } else {
-                ElMessage.error(res.data.msg || '注册失败');
-            }
-        })
-        .catch(() => ElMessage.error('网络异常'));
-};
-const showRegister = () => {
-    loginVisible.value = false
-    registerVisible.value = true
-}
-/* ===== 退出 ===== */
+/* ---------- 退出登录 ---------- */
 const logout = () => {
     ElMessageBox.confirm('确认退出登录？', '提示', {
         type: 'warning',
@@ -256,11 +394,31 @@ watch(
     },
     { immediate: true }
 )
+/* ---------- 搜索 ---------- */
+const handleSearch = () => {
+    const key = searchKey.value.trim()
+    if (!key) return ElMessage.warning('请输入搜索关键词')
+    router.push({ path: '/search', query: { q: key } })
+}
 /* ---------- 菜单跳转 ---------- */
 const goHome = () => router.push('/')
 const goCart = () => checkLogin('/cart')
 const goUser = () => checkLogin('/user')
-const goUshop = () => checkLogin('/ushop')
+const goUshop = async () => {
+    if (!userInfo.value) {
+        ElMessage.warning('请先登录')
+        loginVisible.value = true
+        return
+    }
+    const shop = await loadUserShop()
+    if (shop) {
+        // 已有店铺，直接跳转
+        router.push('/ushop')
+    } else {
+        // 未开店，弹出注册
+        shopRegisterVisible.value = true
+    }
+}
 /* 判断是否登录 */
 const checkLogin = path => {
     if (localStorage.getItem('system-user')) router.push(path)
@@ -268,6 +426,26 @@ const checkLogin = path => {
         ElMessage.warning('请先登录')
         loginVisible.value = true
     }
+}
+
+/* 查询当前用户店铺信息（返回值：店铺对象/null） */
+const loadUserShop = async () => {
+    if (!userInfo.value) return null
+    try {
+        const res = await request.get(`/api/shop/list/${userInfo.value.id}`)
+
+        // ① 正常有店
+        if (res.code === 200 && res.data?.length) return res.data[0]
+
+        // ② 明确无店（后端返回 400）
+        if (res.code === 400 && res.msg?.includes('暂无店铺')) return null
+
+        // ③ 其它异常
+        ElMessage.error(res.msg || '店铺信息加载失败')
+    } catch {
+        ElMessage.error('网络异常，店铺信息加载失败')
+    }
+    return null
 }
 </script>
 
