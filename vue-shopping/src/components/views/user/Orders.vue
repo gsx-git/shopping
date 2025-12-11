@@ -11,9 +11,6 @@
         </div>
       </template>
       <el-table :data="orderList" row-key="id" show-overflow-tooltip>
-        <!-- <el-table-column label="订单编号" width="180">
-          <template #default="{ row }">{{ row.orderNumber }}</template>
-        </el-table-column> -->
         <el-table-column label="订单编号" width="180">
           <template #default="{ row }">
             <span style="color: #409eff; cursor: pointer;" @click="goOrderDetail(row)">
@@ -21,12 +18,15 @@
             </span>
           </template>
         </el-table-column>
+
         <el-table-column label="订单状态" width="120">
           <template #default="{ row }">{{ row.status }}</template>
         </el-table-column>
+
         <el-table-column label="下单时间" width="120">
           <template #default="{ row }">{{ row.date }}</template>
         </el-table-column>
+
         <el-table-column label="商品" min-width="220">
           <template #default="{ row }">
             <div class="goods-box" @click="goProductDetail(row.productId)">
@@ -35,15 +35,19 @@
             </div>
           </template>
         </el-table-column>
+
         <el-table-column label="单价" width="100">
           <template #default="{ row }">¥{{ row.price }}</template>
         </el-table-column>
+
         <el-table-column label="数量" width="100">
           <template #default="{ row }">{{ row.num }}</template>
         </el-table-column>
+
         <el-table-column label="小计" width="100">
           <template #default="{ row }">¥{{ (row.price * row.num).toFixed(2) }}</template>
         </el-table-column>
+
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <!-- 已取消：无操作 -->
@@ -222,6 +226,7 @@ const goProductDetail = (id) => router.push(`/product/${id}`)
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
 }
 
 .goods-img {
