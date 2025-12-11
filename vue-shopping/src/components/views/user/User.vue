@@ -273,11 +273,11 @@ const dummyRequest = () => { } // el-upload 要求
 
 const goOrderDetail = idx => {
     // const status = ['待付款', '待发货', '待收货', '已完成'][idx]
-    router.push(`/user/Orders/${idx + 1}`)
+    router.push(`/user/orders/${idx + 1}`)
 }
 
 const goAllOrders = () => {
-    router.push('/user/Orders/0')
+    router.push('/user/orders/0')
 }
 
 /* 功能菜单 */
