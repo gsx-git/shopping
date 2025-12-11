@@ -11,16 +11,16 @@
                     </div>
                 </div>
                 <div class="shop-card__actions">
-                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openView">
-                        查看资料 </el-button>
                     <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openEdit">
                         修改资料 </el-button>
+                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openView">
+                        查看资料 </el-button>
                 </div>
             </div>
         </el-card>
 
         <!-- 2. 商品管理快捷入口 -->
-        <el-card class="section-card">
+        <!-- <el-card class="section-card">
             <template #header>商品管理</template>
             <el-row :gutter="20">
                 <el-col :span="6" v-for="(t, idx) in productTabs" :key="idx">
@@ -34,11 +34,18 @@
                     </div>
                 </el-col>
             </el-row>
-        </el-card>
+        </el-card> -->
 
-        <!-- 3. 订单管理快捷入口 -->
+        <!-- 订单管理快捷入口 -->
         <el-card class="section-card">
-            <template #header>订单管理</template>
+            <template #header>
+                <div class="order-header">
+                    <span>订单管理</span>
+                    <el-button type="text" @click="goAllOrders" class="all-orders-button">
+                        查看全部订单
+                    </el-button>
+                </div>
+            </template>
             <el-row :gutter="20">
                 <el-col :span="6" v-for="(t, idx) in orderTabs" :key="idx">
                     <div class="order-cell" @click="goOrder(idx)">
@@ -68,20 +75,14 @@
         <!-- 店铺资料弹窗（查看/编辑复用） -->
         <el-dialog v-model="shopEditVisible" :title="isView ? '店铺资料' : '编辑店铺资料'" width="480px" append-to-body>
             <el-form :model="shopForm" :rules="shopRules" ref="shopEditRef" label-width="100px" :disabled="isView">
-                <!-- 弹窗-Logo -->
+                <!-- Logo -->
                 <el-form-item label="店铺Logo">
-                    <el-image style="width: 100px; height: 100px; cursor: pointer;" :src="logoUrl"
-                        :preview-src-list="[logoUrl]" fit="cover">
-                        <template #error>
-                            <el-icon class="avatar-uploader-icon">
-                                <Plus />
-                            </el-icon>
-                        </template>
-                    </el-image>
-                    <!-- 仍保留上传按钮 -->
                     <el-upload :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
-                        :before-upload="beforeLogo">
-                        <el-button size="small" type="primary" plain style="margin-left: 12px;">更换</el-button>
+                        :before-upload="beforeLogo" :disabled="isView">
+                        <img v-if="logoUrl" :src="logoUrl" class="avatar" />
+                        <el-icon v-else class="avatar-uploader-icon">
+                            <Plus />
+                        </el-icon>
                     </el-upload>
                 </el-form-item>
 
@@ -333,7 +334,7 @@ const orderTabs = reactive([
 
 /* 功能菜单 */
 const menuList = [
-    { label: '店铺设置', index: 'settings', icon: markRaw(Setting) },
+    { label: '商品管理', index: 'product', icon: markRaw(Setting) },
     { label: '销售统计', index: 'sales', icon: markRaw(TrendCharts) },
     { label: '评价管理', index: 'reviews', icon: markRaw(ChatDotRound) },
     { label: '促销活动', index: 'promotions', icon: markRaw(Discount) }
@@ -356,6 +357,8 @@ const loadBadge = async () => {
 /* 跳转 */
 const goProduct = idx => router.push(`/ushop/product/${idx}`)
 const goOrder = idx => router.push(`/ushop/orders/${idx + 1}`)
+
+const goAllOrders = () => { router.push('/ushop/orders/0') }
 const handleMenu = index => router.push(`/ushop/${index}`)
 
 /* 监听 shop.id */
@@ -414,6 +417,17 @@ onMounted(() => loadShop())
     margin-bottom: 20px
 }
 
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.all-orders-button {
+    color: #ff5000;
+    font-size: 14px;
+}
+
 .order-cell {
     text-align: center;
     cursor: pointer
@@ -433,17 +447,10 @@ onMounted(() => loadShop())
     color: #8c939d
 }
 
-.avatar1 {
+.avatar {
     width: 80px;
     height: 80px;
     border-radius: 50%;
     object-fit: cover;
-}
-
-.avatar2 {
-    width: 100px;
-    height: 100px;
-    display: block;
-    object-fit: cover
 }
 </style>
