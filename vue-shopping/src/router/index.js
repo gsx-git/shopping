@@ -18,6 +18,7 @@ const routes = [
       { path: 'user/service', name: 'Service', component: () => import('@/components/views/user/Service.vue') },
       { path: 'ushop', name: 'Ushop', component: () => import('@/components/views/Ushop/Ushop.vue') },
       { path: 'ushop/orders/:id', name: 'ShopOrders', component: () => import('@/components/views/Ushop/ShopOrders.vue') },
+      { path: 'ushop/product', name:'Product', component: () => import('@/components/views/Ushop/UshopProduct.vue'), meta: { title: '商品管理' } },
       { path: 'search', name: 'Search', component: () => import('@/components/views/Search.vue') },
       { path: 'product/:id', name: 'ProductDetail', component: () => import('@/components/views/ProductDetail.vue') },
     ]
