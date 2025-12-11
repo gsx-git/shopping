@@ -11,9 +11,10 @@
                     </div>
                 </div>
                 <div class="shop-card__actions">
-                    <el-button type="primary" size="small" plain @click="openEdit">
-                        修改资料
-                    </el-button>
+                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openView">
+                        查看资料 </el-button>
+                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openEdit">
+                        修改资料 </el-button>
                 </div>
             </div>
         </el-card>
@@ -64,28 +65,39 @@
             </el-menu>
         </el-card>
 
-        <!-- 店铺资料修改弹窗（复用注册模板） -->
-        <el-dialog v-model="shopEditVisible" :title="shopForm.id ? '编辑店铺资料' : '开设店铺'" width="480px" append-to-body>
-            <el-form :model="shopForm" :rules="shopRules" ref="shopEditRef" label-width="100px">
-                <!-- Logo -->
+        <!-- 店铺资料弹窗（查看/编辑复用） -->
+        <el-dialog v-model="shopEditVisible" :title="isView ? '店铺资料' : '编辑店铺资料'" width="480px" append-to-body>
+            <el-form :model="shopForm" :rules="shopRules" ref="shopEditRef" label-width="100px" :disabled="isView">
+                <!-- 弹窗-Logo -->
                 <el-form-item label="店铺Logo">
-                    <el-upload class="avatar-uploader" :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
+                    <el-image style="width: 100px; height: 100px; cursor: pointer;" :src="logoUrl"
+                        :preview-src-list="[logoUrl]" fit="cover">
+                        <template #error>
+                            <el-icon class="avatar-uploader-icon">
+                                <Plus />
+                            </el-icon>
+                        </template>
+                    </el-image>
+                    <!-- 仍保留上传按钮 -->
+                    <el-upload :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
                         :before-upload="beforeLogo">
-                        <img v-if="logoUrl" :src="logoUrl" class="avatar" />
-                        <el-icon v-else class="avatar-uploader-icon">
-                            <Plus />
-                        </el-icon>
+                        <el-button size="small" type="primary" plain style="margin-left: 12px;">更换</el-button>
                     </el-upload>
                 </el-form-item>
 
-                <!-- 营业执照 -->
+                <!-- 弹窗-营业执照 同理 -->
                 <el-form-item label="营业执照">
-                    <el-upload class="avatar-uploader" :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
+                    <el-image style="width: 100px; height: 100px; cursor: pointer;" :src="licenseUrl"
+                        :preview-src-list="[licenseUrl]" fit="cover">
+                        <template #error>
+                            <el-icon class="avatar-uploader-icon">
+                                <Plus />
+                            </el-icon>
+                        </template>
+                    </el-image>
+                    <el-upload :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
                         :before-upload="beforeLicense">
-                        <img v-if="licenseUrl" :src="licenseUrl" class="avatar" />
-                        <el-icon v-else class="avatar-uploader-icon">
-                            <Plus />
-                        </el-icon>
+                        <el-button size="small" type="primary" plain style="margin-left: 12px;">更换</el-button>
                     </el-upload>
                 </el-form-item>
 
@@ -101,10 +113,19 @@
             </el-form>
 
             <template #footer>
-                <el-button @click="shopEditVisible = false">取消</el-button>
-                <el-button type="primary" @click="confirmShopEdit">提交</el-button>
+                <!-- 查看模式只显示【关闭】 -->
+                <template v-if="isView">
+                    <el-button @click="shopEditVisible = false">关闭</el-button>
+                </template>
+                <!-- 编辑模式显示【取消/保存】 -->
+                <template v-else>
+                    <el-button @click="shopEditVisible = false">取消</el-button>
+                    <el-button type="primary" @click="confirmShopEdit">保存</el-button>
+                </template>
             </template>
         </el-dialog>
+
+
     </el-main>
 </template>
 
@@ -207,8 +228,21 @@ const shopRules = {
     ]
 }
 
-/* 打开弹窗 */
-const openEdit = () => {
+/* ====== 弹窗模式 ====== */
+const isView = ref(false)   // true=查看  false=编辑
+
+/* ====== 打开弹窗 ====== */
+const openView = () => {     // 查看资料
+    isView.value = true
+    fillForm()                 // 公共回填
+}
+const openEdit = () => {     // 修改资料
+    isView.value = false
+    fillForm()
+}
+
+/* ====== 公共回填 ====== */
+const fillForm = () => {
     shopForm.id = shop.value.id
     shopForm.name = shop.value.name
     shopForm.description = shop.value.description
@@ -394,23 +428,19 @@ onMounted(() => loadShop())
     font-size: 13px
 }
 
-.avatar-uploader ::v-deep .el-upload {
-    border: 1px dashed #d9d9d9;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 100px;
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center
-}
-
 .avatar-uploader-icon {
     font-size: 28px;
     color: #8c939d
 }
 
-.avatar {
+.avatar1 {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar2 {
     width: 100px;
     height: 100px;
     display: block;
