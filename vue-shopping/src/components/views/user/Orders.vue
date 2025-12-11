@@ -56,18 +56,18 @@
             <!-- 待付款：支付 + 取消 -->
             <div v-else-if="row.status === '待付款'">
               <el-button type="success" size="small" @click="payOrder(row)">支付</el-button>
-              <el-button type="danger" size="small" link @click="cancelOrder(row)">取消订单</el-button>
+              <el-button type="danger" size="small" @click="cancelOrder(row)">取消订单</el-button>
             </div>
 
             <!-- 待发货：取消订单 -->
             <div v-else-if="row.status === '待发货'">
-              <el-button type="danger" size="small" link @click="cancelOrder(row)">取消订单</el-button>
+              <el-button type="danger" size="small" @click="cancelOrder(row)">取消订单</el-button>
             </div>
 
             <!-- 待收货：确认收货 + 取消 -->
             <div v-else-if="row.status === '待收货'">
               <el-button type="primary" size="small" @click="confirmReceipt(row)">确认收货</el-button>
-              <el-button type="danger" size="small" link @click="cancelOrder(row)">取消订单</el-button>
+              <el-button type="danger" size="small" @click="cancelOrder(row)">取消订单</el-button>
             </div>
 
             <!-- 已完成：立即评价 -->
