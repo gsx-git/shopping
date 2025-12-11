@@ -11,8 +11,8 @@
                     </div>
                 </div>
                 <div class="shop-card__actions">
-                    <el-button type="primary" size="small" plain @click="goShopHome">
-                        店铺首页
+                    <el-button type="primary" size="small" plain @click="openEdit">
+                        修改资料
                     </el-button>
                 </div>
             </div>
@@ -25,7 +25,6 @@
                 <el-col :span="6" v-for="(t, idx) in productTabs" :key="idx">
                     <div class="order-cell" @click="goProduct(idx)">
                         <el-badge :value="t.badge" class="badge">
-                            <!-- 用 el-icon 组件形式 -->
                             <el-icon :size="24">
                                 <component :is="t.icon" />
                             </el-icon>
@@ -64,6 +63,48 @@
                 </el-menu-item>
             </el-menu>
         </el-card>
+
+        <!-- 店铺资料修改弹窗（复用注册模板） -->
+        <el-dialog v-model="shopEditVisible" :title="shopForm.id ? '编辑店铺资料' : '开设店铺'" width="480px" append-to-body>
+            <el-form :model="shopForm" :rules="shopRules" ref="shopEditRef" label-width="100px">
+                <!-- Logo -->
+                <el-form-item label="店铺Logo">
+                    <el-upload class="avatar-uploader" :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
+                        :before-upload="beforeLogo">
+                        <img v-if="logoUrl" :src="logoUrl" class="avatar" />
+                        <el-icon v-else class="avatar-uploader-icon">
+                            <Plus />
+                        </el-icon>
+                    </el-upload>
+                </el-form-item>
+
+                <!-- 营业执照 -->
+                <el-form-item label="营业执照">
+                    <el-upload class="avatar-uploader" :show-file-list="false" accept="image/jpeg,image/jpg,image/png"
+                        :before-upload="beforeLicense">
+                        <img v-if="licenseUrl" :src="licenseUrl" class="avatar" />
+                        <el-icon v-else class="avatar-uploader-icon">
+                            <Plus />
+                        </el-icon>
+                    </el-upload>
+                </el-form-item>
+
+                <el-form-item label="店铺名称" prop="name">
+                    <el-input v-model="shopForm.name" placeholder="2-20个字" />
+                </el-form-item>
+                <el-form-item label="店铺描述" prop="description">
+                    <el-input v-model="shopForm.description" type="textarea" :rows="3" placeholder="简单介绍一下你的店铺" />
+                </el-form-item>
+                <el-form-item label="身份证号" prop="idcardNo">
+                    <el-input v-model="shopForm.idcardNo" placeholder="店主身份证号" />
+                </el-form-item>
+            </el-form>
+
+            <template #footer>
+                <el-button @click="shopEditVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmShopEdit">提交</el-button>
+            </template>
+        </el-dialog>
     </el-main>
 </template>
 
@@ -72,29 +113,18 @@
 import { onMounted, reactive, computed, ref, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import {
-    Money,        // 待付款
-    Van,          // 待发货
-    Goods,        // 待收货
-    CircleCheck,  // 已完成
-    Setting,
-    TrendCharts,
-    ChatDotRound,
-    Discount,
-    Upload,
-    Download,
-    WarningFilled,
-    Star,
-    RefreshLeft,
-    RefreshRight
+    Money, Van, Goods, CircleCheck,
+    Setting, TrendCharts, ChatDotRound, Discount,
+    Upload, Download, WarningFilled, Star
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import request from '@/utils/request'
 
-
 const router = useRouter()
 
-/* 读取当前登录用户（与 Layout 保持一致） */
+/* 当前用户 */
 const user = computed(() => {
     try {
         return JSON.parse(localStorage.getItem('system-user') || '')
@@ -103,26 +133,29 @@ const user = computed(() => {
     }
 })
 
-/* 店铺信息（可向后端请求） */
+/* 店铺信息 */
 const shop = ref({
     id: 0,
     name: '超级卖家店铺',
     phone: '138****7777',
-    logo: '',
+    logo: ''
 })
-/* 查询当前用户的店铺信息 */
 const loadShop = async () => {
     if (!user.value) return
     try {
         const res = await request.get(`/api/shop/list/${user.value.id}`)
         if (res.code === 200 && res.data?.length) {
-            const shopInfo = res.data[0]
-            shop.value.id = shopInfo.id
-            shop.value.name = shopInfo.name
-            shop.value.description = shopInfo.description
-            shop.value.logo = shopInfo.logo
-                ? `data:image/png;base64,${shopInfo.logo}`
-                : 'https://picsum.photos/300/300?random=' + Date.now()
+            const info = res.data[0]
+            shop.value.id = info.id
+            shop.value.name = info.name
+            shop.value.description = info.description
+            shop.value.logo = info.logo
+                ? `data:image/png;base64,${info.logo}`
+                : `https://picsum.photos/300/300?random=${Date.now()}`
+            shop.value.licenseUrl = info.licenseUrl
+                ? `data:image/png;base64,${info.licenseUrl}`
+                : ''
+            shop.value.idcardNo = info.idcardNo || ''
         } else {
             ElMessage.info(res.msg || '您还未开设店铺')
         }
@@ -141,6 +174,113 @@ const handleAvatarError = () => {
     avatarUrl.value = 'https://picsum.photos/100/100?random=888'
 }
 
+/* 弹窗开关 */
+const shopEditVisible = ref(false)
+
+/* 表单数据 */
+const shopForm = reactive({
+    id: null,
+    name: '',
+    description: '',
+    idcardNo: '',
+    logo: null,
+    licenseUrl: null
+})
+
+/* 预览地址 */
+const logoUrl = ref('')
+const licenseUrl = ref('')
+
+/* 校验规则 */
+const shopRules = {
+    name: [
+        { required: true, message: '请输入店铺名称', trigger: 'blur' },
+        { min: 2, max: 20, message: '长度 2-20 个字符', trigger: 'blur' }
+    ],
+    description: [{ required: true, message: '请输入店铺描述', trigger: 'blur' }],
+    idcardNo: [
+        { required: true, message: '请输入身份证号', trigger: 'blur' },
+        {
+            pattern: /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}(\d|X)$/i,
+            message: '身份证号格式错误', trigger: 'blur'
+        }
+    ]
+}
+
+/* 打开弹窗 */
+const openEdit = () => {
+    shopForm.id = shop.value.id
+    shopForm.name = shop.value.name
+    shopForm.description = shop.value.description
+    shopForm.idcardNo = shop.value.idcardNo ?? ''
+    logoUrl.value = shop.value.logo.startsWith('data:image')
+        ? shop.value.logo
+        : `${import.meta.env.VITE_BASE_URL}/api/shop/${shop.value.id}/logo?t=${Date.now()}`
+    licenseUrl.value = shop.value.licenseUrl?.startsWith('data:image')
+        ? shop.value.licenseUrl
+        : `${import.meta.env.VITE_BASE_URL}/api/shop/${shop.value.id}/license?t=${Date.now()}`
+
+    shopForm.logo = null
+    shopForm.licenseUrl = null
+    shopEditVisible.value = true
+}
+
+/* beforeUpload */
+const beforeLogo = file => {
+    const isPic = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)
+    const isLt2M = file.size / 1024 / 1024 < 2
+    if (!isPic) return ElMessage.error('仅支持 jpg/png 格式'), false
+    if (!isLt2M) return ElMessage.error('图片大小不能超过 2MB'), false
+    logoUrl.value = URL.createObjectURL(file)
+    shopForm.logo = file
+    return false
+}
+const beforeLicense = file => {
+    const isPic = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)
+    const isLt2M = file.size / 1024 / 1024 < 2
+    if (!isPic) return ElMessage.error('仅支持 jpg/png 格式'), false
+    if (!isLt2M) return ElMessage.error('图片大小不能超过 2MB'), false
+    licenseUrl.value = URL.createObjectURL(file)
+    shopForm.licenseUrl = file
+    return false
+}
+
+/* 提交（适配后端 /api/shop/update） */
+const shopEditRef = ref()
+const confirmShopEdit = async () => {
+    const valid = await shopEditRef.value.validate()
+    if (!valid) return
+
+    try {
+        // 1. DTO JSON Blob
+        const dto = {
+            shopId: shopForm.id,   // 后端叫 shopId
+            name: shopForm.name,
+            description: shopForm.description,
+            idcardNo: shopForm.idcardNo,
+            status: null
+        }
+        const dtoBlob = new Blob([JSON.stringify(dto)], { type: 'application/json' })
+
+        // 2. FormData 字段名严格对应后端 @RequestPart
+        const fd = new FormData()
+        fd.append('shopUpdateDTO', dtoBlob)          // 对应 @RequestPart("shopUpdateDTO")
+        if (shopForm.logo) fd.append('logo', shopForm.logo)       // 对应 logo
+        if (shopForm.licenseUrl) fd.append('licenseUrl', shopForm.licenseUrl) // 对应 licenseUrl
+
+        // 3. 请求
+        await axios.post(
+            `${import.meta.env.VITE_BASE_URL}/api/shop/update`,
+            fd
+        )
+        ElMessage.success('店铺资料已更新')
+        await loadShop()
+        shopEditVisible.value = false
+    } catch (e) {
+        ElMessage.error('更新失败')
+    }
+}
+
 /* 商品管理 */
 const productTabs = reactive([
     { label: '上架商品', icon: markRaw(Upload), badge: 0 },
@@ -157,7 +297,7 @@ const orderTabs = reactive([
     { label: '已完成', icon: markRaw(CircleCheck), badge: 0 }
 ])
 
-/* 功能菜单图标与跳转地址 */
+/* 功能菜单 */
 const menuList = [
     { label: '店铺设置', index: 'settings', icon: markRaw(Setting) },
     { label: '销售统计', index: 'sales', icon: markRaw(TrendCharts) },
@@ -165,17 +305,12 @@ const menuList = [
     { label: '促销活动', index: 'promotions', icon: markRaw(Discount) }
 ]
 
-/* 订单状态映射 */
+/* 订单 badge */
 const badgeMap = ['unpaid', 'unship', 'unreceived', 'completed']
-
-/* 3. 获取真实 badge 数字 */
 const loadBadge = async () => {
     try {
         const res = await request.get(`/api/order/listSumByshop/${shop.value.id}`)
-
-        // 400 或 data 为空时兜底成 0
         const stat = res.data || { unpaid: 0, unship: 0, unreceived: 0, completed: 0 }
-
         badgeMap.forEach((key, idx) => {
             orderTabs[idx].badge = Number(stat[key]) || 0
         })
@@ -184,28 +319,21 @@ const loadBadge = async () => {
     }
 }
 
-/* ========== 跳转函数 ========== */
+/* 跳转 */
 const goProduct = idx => router.push(`/ushop/product/${idx}`)
-const goOrder = idx => router.push(`/ushop/order/${idx}`)
+const goOrder = idx => router.push(`/ushop/orders/${idx + 1}`)
 const handleMenu = index => router.push(`/ushop/${index}`)
-const goShopHome = () => ElMessage.success('跳转到店铺首页（待实现）')
-// 监听 shop.id 变化，一旦有了就拉订单
-watch(
-    () => shop.value.id,
-    (newId) => {
-        if (newId) loadBadge()
-    },
-    { immediate: true } // 如果后端返回很快，也能立即触发
-)
-onMounted(() => {
-    loadShop()   // ✅ 把店铺信息拉下来
-})
+
+/* 监听 shop.id */
+watch(() => shop.value.id, newId => newId && loadBadge(), { immediate: true })
+
+onMounted(() => loadShop())
 </script>
 
 <style scoped>
 .ushop-main {
     background-color: #f5f5f5;
-    padding: 20px;
+    padding: 20px
 }
 
 .shop-card {
@@ -233,36 +361,59 @@ onMounted(() => {
 
 .shop-card__name {
     font-size: 18px;
-    font-weight: bold;
+    font-weight: bold
 }
 
 .shop-card__phone {
     color: #999;
     font-size: 14px;
-    margin-top: 4px;
+    margin-top: 4px
 }
 
 .shop-card__actions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 8px
 }
 
 .section-card {
-    margin-bottom: 20px;
+    margin-bottom: 20px
 }
 
 .order-cell {
     text-align: center;
-    cursor: pointer;
+    cursor: pointer
 }
 
 .order-cell:hover {
-    color: #ff5000;
+    color: #ff5000
 }
 
 .label {
     margin-top: 6px;
-    font-size: 13px;
+    font-size: 13px
+}
+
+.avatar-uploader ::v-deep .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center
+}
+
+.avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d
+}
+
+.avatar {
+    width: 100px;
+    height: 100px;
+    display: block;
+    object-fit: cover
 }
 </style>
