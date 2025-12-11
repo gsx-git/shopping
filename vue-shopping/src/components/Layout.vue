@@ -501,7 +501,7 @@ const loadUserShop = async () => {
     margin-left: auto;
 }
 
-.el-main {}
+/* .el-main {} */
 
 .avatar-uploader ::v-deep .el-upload {
     border: 1px dashed #d9d9d9;
