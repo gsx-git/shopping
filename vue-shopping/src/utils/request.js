@@ -12,8 +12,10 @@ const request = axios.create({
 // 可以自请求发送前对请求做一些处理
 request.interceptors.request.use(config => {
     config.headers['Content-Type'] = 'application/json;charset=utf-8';
+    // console.log('拦截器通过', config)
     return config
 }, error => {
+    // console.error('请求拦截器错误', err)
     return Promise.reject(error)
 });
 
@@ -35,6 +37,7 @@ request.interceptors.response.use(
             ElMessage.error(res.msg);
             router.push("/login")
         }
+        // console.log('响应拦截器通过', res)
         return res;
     },
         error => {
@@ -49,6 +52,7 @@ request.interceptors.response.use(
                 ElMessage.error(error.response.data?.msg || '请求失败');
             }
         }
+        // console.error('响应拦截器错误', err)
         return Promise.reject(error)
     }
 )
