@@ -28,7 +28,7 @@
                 <div class="order-header">
                     <span>我的订单</span>
                     <el-button type="text" @click="goAllOrders" class="all-orders-button">
-                        查看全部订单 <i class="el-icon-arrow-right"></i>
+                        查看全部订单
                     </el-button>
                 </div>
             </template>
