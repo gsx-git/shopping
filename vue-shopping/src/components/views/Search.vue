@@ -113,7 +113,7 @@ const goDetail = (id) => router.push(`/product/${id}`)
 </script>
 <style scoped>
 .header-container {
-  tdisplay: flex;
+  display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
