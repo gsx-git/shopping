@@ -11,6 +11,7 @@ const request = axios.create({
 // request 拦截器
 // 可以自请求发送前对请求做一些处理
 request.interceptors.request.use(config => {
+    if (config.data instanceof FormData) return config
     config.headers['Content-Type'] = 'application/json;charset=utf-8';
     // console.log('拦截器通过', config)
     return config
@@ -40,7 +41,7 @@ request.interceptors.response.use(
         // console.log('响应拦截器通过', res)
         return res;
     },
-        error => {
+    error => {
         console.log('err' + error)
         if (error.response) {
             if (error.response.status === 401) {
