@@ -193,7 +193,6 @@ const currentUser = (() => {
 /* ① 商品详情 */
 const fetchProduct = async () => {
   const id = route.params.id
-  console.log(route)
   try {
     const { data } = await request.get(`/api/product/list1/${id}`)
 
