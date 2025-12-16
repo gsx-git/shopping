@@ -11,15 +11,15 @@
           </el-button>
         </div>
       </template>
-      <el-table :data="collectList" row-key="id" show-overflow-tooltip>
+      <el-table :data="collectList" row-key="id">
         <el-table-column label="商品图片" width="120">
           <template #default="{ row }">
             <img :src="row.img" class="collect-img" @click="goDetail(row.productId)" />
           </template>
         </el-table-column>
-        <el-table-column label="商品名称" min-width="200">
+        <el-table-column label="商品名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <span @click="goDetail(row.productId)">{{ row.title }}</span>
+            <span class="collect-title" @click="goDetail(row.productId)">{{ row.title }}</span>
           </template>
         </el-table-column>
         <el-table-column label="价格" width="120">
@@ -27,7 +27,6 @@
         </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button type="text" @click="addCart(row.id)">加入购物车</el-button>
             <el-button type="text" @click="removeCollect(row.id)">取消收藏</el-button>
           </template>
         </el-table-column>
@@ -74,12 +73,6 @@ const fetchCollectList = async () => {
   }
 }
 
-/* 加入购物车 */
-const addCart = (id) => {
-  /* 这里调你现成的加购接口即可 */
-  ElMessage.success(`商品${id} 已加入购物车`)
-}
-
 /* 取消收藏 */
 const removeCollect = async (id) => {
   try {
@@ -124,6 +117,11 @@ onMounted(fetchCollectList)
   height: 100px;
   object-fit: cover;
   cursor: pointer;
+}
+
+.collect-title {
+  cursor: pointer;
+  color: #409eff;
 }
 
 .collect-img:hover {
