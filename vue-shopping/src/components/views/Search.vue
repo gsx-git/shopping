@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import request from '@/utils/request'
@@ -63,42 +63,26 @@ const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(20)
 
-/* 请求数据 */
+/* 请求数据：带上 status=2 仅查已上架 */
 const loadData = async () => {
   const key = route.query.q || ''
   if (!key) return
-  // const { data } = await request.post('/api/product/ListPage', {
-  //   pageNum: pageNum.value,
-  //   pageSize: pageSize.value,
-  //   param: { name: key }
-  // })
-
-  // /* ✅ 关键：Spring 默认字段是 content / totalElements / number */
-  // list.value = data.content          // 当前页数组
-  // total.value = data.totalElements    // 总条数
-  // pageNum.value = data.number + 1      // 后端从 0 开始，前端从 1 开始
   const res = await request.post('/api/product/ListPage', {
     pageNum: pageNum.value,
     pageSize: pageSize.value,
-    param: { name: key }
+    param: {
+      name: key,
+      status: 2          // ✅ 只查已上架商品
+    }
   })
-
-  // 本次修复：res 就是业务数据
   list.value = res.content
   total.value = res.totalElements
   pageNum.value = res.number + 1
 }
 
-/* 页码/每页条数变化 */
-const handleCurrentChange = (val) => {
-  pageNum.value = val
-  loadData()
-}
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  pageNum.value = 1
-  loadData()
-}
+/* 分页事件 */
+const handleCurrentChange = val => { pageNum.value = val; loadData() }
+const handleSizeChange = val => { pageSize.value = val; pageNum.value = 1; loadData() }
 
 /* 搜索关键字变化 -> 重置到第一页 */
 watch(() => route.query.q, () => {
