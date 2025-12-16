@@ -72,7 +72,8 @@
 
             <!-- 已完成：立即评价 -->
             <div v-else-if="row.status === '已完成'">
-              <el-button type="warning" size="small" @click="goReview(row)">立即评价</el-button>
+              <el-button type="warning" size="small" @click="openReview(row)">立即评价</el-button>
+              <el-button type="info" size="small" @click="openMyComment(row)">查看评价</el-button>
             </div>
 
             <!-- 其他状态：无操作 -->
@@ -84,6 +85,41 @@
         <div class="total">合计：<strong>¥{{ totalPrice }}</strong></div>
       </div> -->
     </el-card>
+
+    <!-- 评价弹窗（直接内嵌） -->
+    <el-dialog title="发表评价" v-model="reviewVisible" width="420px" top="10vh" :close-on-click-modal="false"
+      @closed="resetReview">
+      <el-form :model="reviewForm" label-width="60px">
+        <el-form-item label="评分">
+          <el-rate v-model="reviewForm.score" show-text :texts="['', '', '', '', '']" />
+        </el-form-item>
+        <el-form-item label="内容">
+          <el-input v-model="reviewForm.content" type="textarea" :rows="4" maxlength="200" show-word-limit
+            placeholder="请输入评价内容（200字以内）" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="reviewVisible = false">取 消</el-button>
+        <el-button type="primary" :loading="reviewLoading" @click="submitReview">提 交</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 查看/删除评价弹窗 -->
+    <el-dialog title="我的评价" v-model="commentVisible" width="520px" top="10vh">
+      <div v-if="myComments.length === 0" style="text-align:center;color:#999;">暂无评价</div>
+      <div v-else>
+        <div v-for="c in myComments" :key="c.id" class="comment-box">
+          <div class="cmt-header">
+            <el-rate v-model="c.score" disabled show-score text-color="#ff9900" score-template="{value} 分" />
+            <el-button type="text" size="small" style="color:#F56C6C" @click="deleteComment(c.id)">删除</el-button>
+          </div>
+          <div class="cmt-content">{{ c.content }}</div>
+          <div class="cmt-time">{{ fmtDate(c.createTime) }}</div>
+        </div>
+      </div>
+    </el-dialog>
+
   </el-main>
 </template>
 
@@ -99,6 +135,14 @@ const router = useRouter()
 const loading = ref(true)
 const orderList = ref([])
 const targetStatus = Number(route.params.id)
+
+// 将 [yyyy,MM,dd,HH,mm] 格式化成 "YYYY-MM-DD HH:mm"
+const fmtDate = arr => {
+  if (!Array.isArray(arr) || arr.length < 5) return ''
+  const [y, M, d, H, m] = arr.map(v => String(v).padStart(2, '0'))
+  return `${y}-${M}-${d} ${H}:${m}`
+}
+
 // console.log('当前 订单状态码:', targetStatus);
 const statusMap = { 1: '待付款', 2: '待发货', 3: '待收货', 4: '已完成', 5: '已取消' }
 /* 根据 user.id 拉取订单 */
@@ -120,19 +164,94 @@ const fetchOrders = async () => {
       productId: item.productId,
       statusNumber: item.status,
       status: statusMap[item.status] ?? '未知状态',
-      date: item.createTime.slice(0, 3).join('-'), // 取年月日
+      date: fmtDate(item.createTime), // 取年月日
       img: `data:image/png;base64,${item.productImage}`, // base64 图片
       title: item.productName,
       price: item.price,
       num: item.quantity
     }))
       .filter(item => targetStatus != 0 ? item.statusNumber === targetStatus : true)
-    console.log('当前 orderList.value:', orderList.value);
+    // console.log('当前 orderList.value:', orderList.value);
   } catch (e) {
     ElMessage.error('获取订单失败')
   } finally {
     loading.value = false
   }
+}
+
+/* ======== 评价相关 ======== */
+const reviewVisible = ref(false)
+const reviewLoading = ref(false)
+const reviewForm = ref({
+  orderId: '',
+  productId: '',
+  score: 5,
+  content: ''
+})
+
+const openReview = row => {
+  reviewForm.value.orderId = row.id
+  reviewForm.value.productId = row.productId
+  reviewVisible.value = true
+}
+
+const resetReview = () => {
+  reviewForm.value = { orderId: '', productId: '', score: 5, content: '' }
+}
+
+const submitReview = async () => {
+  if (!reviewForm.value.content.trim()) return ElMessage.warning('请输入评价内容')
+  reviewLoading.value = true
+  try {
+    const raw = localStorage.getItem('system-user')
+    const user = raw ? JSON.parse(raw) : null
+    if (!user?.id) return ElMessage.warning('请先登录')
+    await request.post('/api/productComment/add', {
+      userId: user.id,
+      productId: reviewForm.value.productId,
+      score: reviewForm.value.score,
+      content: reviewForm.value.content.trim()
+    })
+    ElMessage.success('评价成功')
+    reviewVisible.value = false
+    fetchOrders()          // 刷新列表
+  } catch (e) {
+    ElMessage.error(e?.msg || '提交失败')
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+/* ====== 查看/删除评价 ====== */
+const commentVisible = ref(false)
+const myComments = ref([])   // 当前商品、当前用户的评价
+let currentProductId = 0       // 临时缓存
+
+/* 打开评价列表 */
+const openMyComment = async row => {
+  currentProductId = row.productId
+  const raw = localStorage.getItem('system-user')
+  const user = raw ? JSON.parse(raw) : null
+  if (!user?.id) return ElMessage.warning('请先登录')
+  try {
+    // 一次性拉该商品的全部评价，前端再过滤当前用户
+    const { data } = await request.get(`/api/productComment/list/${row.productId}`)
+    myComments.value = (data || []).filter(c => c.userId === user.id)
+    commentVisible.value = true
+  } catch {
+    ElMessage.error('获取评价失败')
+  }
+}
+
+/* 删除评价 */
+const deleteComment = async id => {
+  try {
+    await ElMessageBox.confirm('确定删除这条评价？', '提示', { type: 'warning' })
+    await request.delete(`/api/productComment/delete/${id}`)
+    ElMessage.success('已删除')
+    // 重新拉当前列表
+    myComments.value = myComments.value.filter(c => c.id !== id)
+  } catch { }
 }
 
 const totalPrice = computed(() =>
@@ -255,5 +374,28 @@ const goProductDetail = (id) => router.push(`/product/${id}`)
 
 .total strong {
   font-size: 20px;
+}
+
+.comment-box {
+  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+}
+
+.cmt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cmt-content {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #303133;
+  white-space: pre-wrap;
+}
+
+.cmt-time {
+  font-size: 12px;
+  color: #909399;
 }
 </style>
