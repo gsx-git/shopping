@@ -257,18 +257,18 @@ const beforeLogo = (rawFile) => {
 
 /* 营业执照上传前校验 */
 const beforeLicense = (rawFile) => {
-  const allow = ['image/jpeg','image/jpg','image/png']
-  if (!allow.includes(rawFile.type)) {
-    ElMessage.error('营业执照只能是 JPG / PNG 格式')
+    const allow = ['image/jpeg', 'image/jpg', 'image/png']
+    if (!allow.includes(rawFile.type)) {
+        ElMessage.error('营业执照只能是 JPG / PNG 格式')
+        return false
+    }
+    if (rawFile.size / 1024 / 1024 > 5) {
+        ElMessage.error('营业执照大小不能超过 5MB')
+        return false
+    }
+    shopForm.licenseFile = rawFile
+    licenseUrl.value = URL.createObjectURL(rawFile)
     return false
-  }
-  if (rawFile.size / 1024 / 1024 > 5) {
-    ElMessage.error('营业执照大小不能超过 5MB')
-    return false
-  }
-  shopForm.licenseFile = rawFile
-  licenseUrl.value = URL.createObjectURL(rawFile)
-  return false
 }
 
 /* ---------- 用户注册弹窗 ---------- */
