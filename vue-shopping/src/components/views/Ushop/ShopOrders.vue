@@ -47,22 +47,12 @@
                     <template #default="{ row }">¥{{ (row.price * row.num).toFixed(2) }}</template>
                 </el-table-column>
 
-                <!-- <el-table-column label="买家" width="120">
-                    <template #default="{ row }">{{ row.buyerName }}</template>
-                </el-table-column> -->
-
                 <el-table-column label="操作" width="220" fixed="right">
                     <template #default="{ row }">
                         <!-- 待发货：发货 -->
                         <div v-if="row.status === '待发货'">
                             <el-button type="primary" size="small" @click="shipOrder(row)">发货</el-button>
                         </div>
-
-                        <!-- 已完成：查看评价 -->
-                        <div v-else-if="row.status === '已完成'">
-                            <el-button type="warning" size="small" @click="goReview(row)">查看评价</el-button>
-                        </div>
-
                         <span v-else>--</span>
                     </template>
                 </el-table-column>
