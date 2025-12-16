@@ -76,9 +76,9 @@ const router = useRouter()
 
 /* 轮播图 */
 const banners = ref([
-  'https://picsum.photos/1440/400?random=1',
-  'https://picsum.photos/1440/400?random=2',
-  'https://picsum.photos/1440/400?random=3'
+  'https://picsum.photos/id/1018/1440/400',
+  'https://picsum.photos/id/1019/1440/400',
+  'https://picsum.photos/id/1020/1440/400'
 ])
 
 /* 分类 */
