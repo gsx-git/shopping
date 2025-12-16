@@ -19,23 +19,6 @@
             </div>
         </el-card>
 
-        <!-- 2. 商品管理快捷入口 -->
-        <!-- <el-card class="section-card">
-            <template #header>商品管理</template>
-            <el-row :gutter="20">
-                <el-col :span="6" v-for="(t, idx) in productTabs" :key="idx">
-                    <div class="order-cell" @click="goProduct(idx)">
-                        <el-badge :value="t.badge" class="badge">
-                            <el-icon :size="24">
-                                <component :is="t.icon" />
-                            </el-icon>
-                        </el-badge>
-                        <div class="label">{{ t.label }}</div>
-                    </div>
-                </el-col>
-            </el-row>
-        </el-card> -->
-
         <!-- 订单管理快捷入口 -->
         <el-card class="section-card">
             <template #header>
@@ -336,8 +319,8 @@ const orderTabs = reactive([
 const menuList = [
     { label: '商品管理', index: 'product', icon: markRaw(Setting) },
     { label: '销售统计', index: 'sales', icon: markRaw(TrendCharts) },
-    { label: '评价管理', index: 'reviews', icon: markRaw(ChatDotRound) },
-    { label: '促销活动', index: 'promotions', icon: markRaw(Discount) }
+    // { label: '评价管理', index: 'reviews', icon: markRaw(ChatDotRound) },
+    // { label: '促销活动', index: 'promotions', icon: markRaw(Discount) }
 ]
 
 /* 订单 badge */
