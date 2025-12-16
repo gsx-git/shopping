@@ -360,6 +360,7 @@ onMounted(loadCart);
     display: flex;
     align-items: center;
     gap: 12px;
+    cursor: pointer;
 }
 
 .goods-img {
