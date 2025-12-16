@@ -235,9 +235,27 @@ const handlePageChange = (val) => {
 
 /* 上下架切换 */
 const toggleStatus = async (row) => {
+    if (row.status === 0) {
+        ElMessage.warning('商品未审核，无法上下架')
+        return
+    }
+
     const next = row.status === 2 ? 1 : 2
     try {
-        await axios.put(`/api/product/status/${row.id}/${next}`)
+        // 组装后端需要的完整 DTO（只改 status，其余用原值）
+        const dto = {
+            id: row.id,
+            status: next,
+            // 下面字段只用于占位，后端非空才覆盖
+            name: null,
+            subtitle: null,
+            price: null,
+            stock: null,
+            sales: null,
+            categoryId: null
+        }
+        // 走 /update 接口，用 PUT + Body
+        await request.post('/api/product/update', dto)
         ElMessage.success(next === 2 ? '已上架' : '已下架')
         row.status = next
     } catch {
