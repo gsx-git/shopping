@@ -47,9 +47,9 @@
                     <template #default="{ row }">¥{{ (row.price * row.num).toFixed(2) }}</template>
                 </el-table-column>
 
-                <el-table-column label="买家" width="120">
+                <!-- <el-table-column label="买家" width="120">
                     <template #default="{ row }">{{ row.buyerName }}</template>
-                </el-table-column>
+                </el-table-column> -->
 
                 <el-table-column label="操作" width="220" fixed="right">
                     <template #default="{ row }">
