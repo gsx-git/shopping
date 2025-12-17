@@ -153,6 +153,7 @@ const user = (() => {
     return raw ? JSON.parse(raw) : null;
 })();
 
+/* 拉取远程 SKU */
 const fetchSkuList = async (productId) => {
     if (skuMap.value[productId]) return; // 已缓存
     try {
@@ -199,10 +200,9 @@ const updateCart = async (row, newSkuId = null) => {
     try {
         await request.put("/api/shoppingcart/update", {
             id: row.id,
-            quantity: row.num,
+            quantity: row.quantity,
             sku: { id: finalSkuId },
         });
-        ElMessage.success("已更新");
         /* ✅ 重新拉购物车（含最新单价、库存） */
         await loadCart();
     } catch (e) {
@@ -375,6 +375,7 @@ onMounted(loadCart);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: #409eff;
 }
 
 .footer-bar {
