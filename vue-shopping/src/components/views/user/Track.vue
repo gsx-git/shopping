@@ -13,13 +13,13 @@
         </div>
       </template>
 
-      <el-table :data="trackList" row-key="id">
+      <el-table :data="trackList" row-key="id" show-overflow-tooltip>
         <el-table-column label="商品图片" width="120" >
           <template #default="{ row }">
             <img :src="row.img" class="track-img" @click="goDetail(row.id)" />
           </template>
         </el-table-column>
-        <el-table-column label="商品名称" min-width="200" show-overflow-tooltip>
+        <el-table-column label="商品名称" min-width="200">
           <template #default="{ row }">
             <span class="track-title" @click="goDetail(row.id)">{{ row.title }}</span>
           </template>
@@ -119,8 +119,8 @@ onMounted(fetchTrackList)
 }
 
 .track-img {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   cursor: pointer;
 }

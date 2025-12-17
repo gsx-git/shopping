@@ -11,13 +11,13 @@
           </el-button>
         </div>
       </template>
-      <el-table :data="collectList" row-key="id">
+      <el-table :data="collectList" row-key="id" show-overflow-tooltip>
         <el-table-column label="商品图片" width="120">
           <template #default="{ row }">
             <img :src="row.img" class="collect-img" @click="goDetail(row.productId)" />
           </template>
         </el-table-column>
-        <el-table-column label="商品名称" min-width="200" show-overflow-tooltip>
+        <el-table-column label="商品名称" min-width="200">
           <template #default="{ row }">
             <span class="collect-title" @click="goDetail(row.productId)">{{ row.title }}</span>
           </template>
@@ -113,8 +113,8 @@ onMounted(fetchCollectList)
 }
 
 .collect-img {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   cursor: pointer;
 }
