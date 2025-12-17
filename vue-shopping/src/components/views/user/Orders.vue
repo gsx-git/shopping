@@ -360,6 +360,7 @@ const goProductDetail = (id) => router.push(`/product/${id}`)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #409eff;
 }
 
 .order-total {
