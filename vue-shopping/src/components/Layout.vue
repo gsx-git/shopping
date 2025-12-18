@@ -165,7 +165,7 @@ watch(
         const map = [
             { prefix: '/cart', index: '2' },
             { prefix: '/user', index: '3' },
-            { prefix: '/ushop', index: '4' },
+            { prefix: '/shop', index: '4' },
             { prefix: '/', index: '1' }
         ]
         activeIndex.value = map.find(m => path.startsWith(m.prefix))?.index || '1'
