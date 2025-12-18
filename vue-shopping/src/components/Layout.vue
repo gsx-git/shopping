@@ -32,7 +32,7 @@
                 <el-menu-item index="1" @click="goHome">首页</el-menu-item>
                 <el-menu-item index="2" @click="goCart">购物车</el-menu-item>
                 <el-menu-item index="3" @click="goUser">我的</el-menu-item>
-                <el-menu-item index="4" @click="goUshop">我的店铺</el-menu-item>
+                <el-menu-item index="4" @click="goShop">我的店铺</el-menu-item>
             </el-menu>
         </el-header>
 
@@ -404,7 +404,7 @@ const handleSearch = () => {
 const goHome = () => router.push('/')
 const goCart = () => checkLogin('/cart')
 const goUser = () => checkLogin('/user')
-const goUshop = async () => {
+const goShop = async () => {
     if (!userInfo.value) {
         ElMessage.warning('请先登录')
         loginVisible.value = true
@@ -413,7 +413,7 @@ const goUshop = async () => {
     const shop = await loadUserShop()
     if (shop) {
         // 已有店铺，直接跳转
-        router.push('/ushop')
+        router.push('/shop')
     } else {
         // 未开店，弹出注册
         shopRegisterVisible.value = true
