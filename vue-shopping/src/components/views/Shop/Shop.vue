@@ -324,13 +324,11 @@ const orderTabs = reactive([
     { label: '已完成', icon: markRaw(CircleCheck), badge: 0 }
 ])
 
-/* 功能菜单 */
-const menuList = [
+/* 功能菜单（等 shop.id 有了再生成） */
+const menuList = computed(() => [
     { label: '商品管理', index: 'product', icon: markRaw(Setting) },
-    { label: '销售统计', index: 'sales', icon: markRaw(TrendCharts) },
-    // { label: '评价管理', index: 'reviews', icon: markRaw(ChatDotRound) },
-    // { label: '促销活动', index: 'promotions', icon: markRaw(Discount) }
-]
+    { label: '销售统计', index: `sales/${shop.value.id}`, icon: markRaw(TrendCharts) },
+])
 
 /* 订单 badge */
 const badgeMap = ['unpaid', 'unship', 'unreceived', 'completed']
@@ -357,7 +355,7 @@ const handleMenu = index => router.push(`/shop/${index}`)
 /* 监听 shop.id */
 watch(() => shop.value.id, newId => newId && loadBadge(), { immediate: true })
 
-onMounted(() => loadShop())
+onMounted(async () => await loadShop())
 </script>
 
 <style scoped>
