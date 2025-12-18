@@ -21,7 +21,7 @@
                 <el-table-column label="商品图" width="100">
                     <template #default="{ row }">
                         <el-image style="width:60px;height:60px;border-radius:4px;cursor:pointer" :src="row.productImg"
-                            :preview-src-list="[row.productImg]" fit="cover">
+                            :preview-src-list="[row.productImg]" fit="cover" :preview-teleported="true" :z-index="9999">
                             <template #error>
                                 <img src="https://picsum.photos/60/60?random=888" class="goods-img" />
                             </template>
