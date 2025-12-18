@@ -31,7 +31,7 @@
               <div class="shop">店铺：{{ p.shopName }}</div>
               <div class="sku-tags">
                 <el-tag v-for="s in p.skus.slice(0, 2)" :key="s.id" size="small" type="info">
-                  {{ JSON.parse(s.specs)['功能'] || s.skuCode }}
+                  {{ getAllPropertyValues(s.specs) || s.skuCode }}
                 </el-tag>
                 <span v-if="p.skus.length > 2" class="more-sku">+{{ p.skus.length - 2 }}</span>
               </div>
@@ -89,6 +89,17 @@ watch(() => route.query.q, () => {
   pageNum.value = 1
   loadData()
 }, { immediate: true })
+
+/* 获取商品详情 */
+const getAllPropertyValues = (specsStr) => {
+  try {
+    const specs = JSON.parse(specsStr);
+    const values = Object.values(specs);
+    return values.filter(value => value).join(' ') || '';
+  } catch (e) {
+    return '';
+  }
+};
 
 /* 返回 & 跳转详情 */
 const goBack = () => router.back()

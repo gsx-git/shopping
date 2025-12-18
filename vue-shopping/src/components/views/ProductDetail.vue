@@ -4,7 +4,11 @@
     <el-card class="product-card">
       <template #header>
         <div class="product-header">
-          <span>商品信息</span>
+          <!-- 店铺信息 -->
+          <div class="shop-bar" @click="router.push(`/ushop/${product.shopId}`)">
+            <img :src="shopLogo" class="shop-logo" />
+            <span class="shop-name">{{ shopName }}></span>
+          </div>
           <!-- 返回按钮 -->
           <el-button type="text" @click="goBack" class="back-button">
             返回 <i class="el-icon-arrow-left"></i>
@@ -59,7 +63,7 @@
           <div class="review-main">
             <div class="review-line">
               <span class="review-user">{{ review.username }}</span>
-              <el-rate v-model="review.score" disabled show-score text-color="#ff9900" score-template="{value}" />
+              <el-rate v-model="review.score" disabled show-score score-template="{value}星" />
             </div>
             <div class="review-text">{{ review.text }}</div>
             <div class="review-time">{{ fmtDate(review.createTime) }}</div>
@@ -86,13 +90,15 @@
       </div>
     </el-dialog>
 
-    <!-- 规格 & 数量选择弹框 -->
+    <!-- 购物车 规格 & 数量选择弹框 -->
     <el-dialog v-model="showSku" title="选择规格" width="420px" :close-on-click-modal="false">
       <el-form label-width="70px">
         <el-form-item label="规格">
           <el-radio-group v-model="selectedSkuId">
             <el-radio v-for="s in skuList" :key="s.id" :label="s.id" :disabled="s.stock <= 0">
-              {{ fmtSpecs(s.specs) }} &nbsp; <small>(库存 {{ s.stock }})</small>
+              {{ fmtSpecs(s.specs) }}&nbsp;&nbsp;
+              <span style="color: #ff5000;">¥{{ s.price }}</span>
+              &nbsp;（库存&nbsp;{{ s.stock }}）
             </el-radio>
           </el-radio-group>
         </el-form-item>
@@ -106,13 +112,15 @@
       </template>
     </el-dialog>
 
-    <!-- 购买规格 & 数量选择 -->
+    <!-- 购买 规格 & 数量选择 -->
     <el-dialog v-model="showBuy" title="选择规格" width="420px" :close-on-click-modal="false">
       <el-form label-width="70px">
         <el-form-item label="规格">
           <el-radio-group v-model="selectedSkuId">
             <el-radio v-for="s in skuList" :key="s.id" :label="s.id" :disabled="s.stock <= 0">
-              {{ fmtSpecs(s.specs) }} &nbsp; <small>(库存 {{ s.stock }})</small>
+              {{ fmtSpecs(s.specs) }}&nbsp;&nbsp;
+              <span style="color: #ff5000;">¥{{ s.price }}</span>
+              &nbsp;（库存&nbsp;{{ s.stock }}）
             </el-radio>
           </el-radio-group>
         </el-form-item>
@@ -125,6 +133,7 @@
         <el-button type="primary" @click="confirmBuy">立即下单</el-button>
       </template>
     </el-dialog>
+
     <!-- ① 确认订单弹窗 -->
     <el-dialog v-model="showConfirm" title="确认订单" width="520px" :close-on-click-modal="false">
       <!-- 1. 收货地址 -->
@@ -206,6 +215,8 @@ const payAmount = ref(0)    // 待支付金额
 let orderId = null          // 待支付订单号
 let collectid = null        // 收藏项ID（用于取消收藏）
 
+const shop = ref({})   // 店铺信息
+
 // 将 [yyyy,MM,dd,HH,mm] 格式化成 "YYYY-MM-DD HH:mm"
 const fmtDate = arr => {
   if (!Array.isArray(arr) || arr.length < 5) return ''
@@ -214,7 +225,7 @@ const fmtDate = arr => {
 }
 
 /* 当前用户 */
-const currentUser = (() => {
+const User = (() => {
   const raw = localStorage.getItem('system-user')
   return raw ? JSON.parse(raw) : null
 })()
@@ -223,9 +234,8 @@ const currentUser = (() => {
 const fetchProduct = async () => {
   const id = route.params.id
   try {
+    /* 拉取商品基本信息 */
     const { data } = await request.get(`/api/product/list1/${id}`)
-
-    /* 基本信息 */
     product.value = {
       id: data.id,
       title: data.name,
@@ -246,6 +256,26 @@ const fetchProduct = async () => {
   }
 }
 
+const fetchShop = async () => {
+  if (!product.value.shopId) return
+  try {
+    const res = await request.get(`/api/shop/listByShopId/${product.value.shopId}`)
+    // 后端返回的是对象（单个店铺），只要非空就赋值
+    if (res.data && Object.keys(res.data).length) {
+      shop.value = res.data
+    }
+  } catch (e) {
+    ElMessage.error('获取店铺信息失败')
+  }
+}
+
+/* 计算属性：放在函数外部，模板才能访问 */
+const shopName = computed(() => shop.value.name || '官方店铺')
+const shopLogo = computed(() =>
+  shop.value.logo
+    ? `data:image/png;base64,${shop.value.logo}`
+    : `https://picsum.photos/60/60?random=${product.value.shopId}`
+)
 /* ② 商品评价 */
 const fetchReviews = async () => {
   const id = route.params.id
@@ -268,10 +298,10 @@ const fetchReviews = async () => {
 
 /* ③ 收藏状态 - 拉列表比对 并保存当前商品收藏id*/
 const fetchFavoriteStatus = async () => {
-  if (!currentUser?.id) return
+  if (!User?.id) return
 
   try {
-    const { data } = await request.get(`/api/collection/list/${currentUser.id}`)
+    const { data } = await request.get(`/api/collection/list/${User.id}`)
     const list = Array.isArray(data) ? data : data.data ?? []
 
     // 当前商品 id
@@ -296,7 +326,7 @@ const fetchFavoriteStatus = async () => {
 
 /* ⑤ 收藏 / 取消收藏 */
 const toggleFavorite = async () => {
-  if (!currentUser?.id) {
+  if (!User?.id) {
     ElMessage.warning('请先登录')
     return
   }
@@ -307,7 +337,7 @@ const toggleFavorite = async () => {
       ElMessage.info('已取消收藏')
     } else {
       await request.post('/api/collection/add', {
-        user: { id: currentUser.id },
+        user: { id: User.id },
         product: { id: productid }
       })
       ElMessage.success('已收藏')
@@ -322,10 +352,10 @@ const toggleFavorite = async () => {
 
 /* ⑥ 上传浏览记录 */
 const addHistory = async () => {
-  if (!currentUser?.id) return
+  if (!User?.id) return
   try {
     await request.post('/api/userHistory/add', {
-      user: { id: currentUser.id },
+      user: { id: User.id },
       product: { id: route.params.id }
     })
   } catch (e) {
@@ -348,7 +378,7 @@ const selectedSku = computed(() =>
 
 /* ④ 加入购物车--打开弹框 */
 const addCart = () => {
-  if (!currentUser?.id) {
+  if (!User?.id) {
     ElMessage.warning('请先登录')
     return
   }
@@ -366,7 +396,7 @@ const confirmAddCart = async () => {
   }
   try {
     await request.post('/api/shoppingcart/add', {
-      user: { id: currentUser.id },
+      user: { id: User.id },
       product: { id: product.value.id },
       sku: { id: selectedSkuId.value },
       quantity: quantity.value
@@ -381,9 +411,9 @@ const confirmAddCart = async () => {
 
 /* 拉取收货地址 */
 const fetchAddress = async () => {
-  if (!currentUser?.id) return
+  if (!User?.id) return
   try {
-    const { data } = await request.get(`/api/useraddress/list/${currentUser.id}`)
+    const { data } = await request.get(`/api/useraddress/list/${User.id}`)
     addrList.value = (Array.isArray(data) ? data : data.data ?? [])
       .map(item => ({
         id: item.id,
@@ -402,7 +432,7 @@ const fetchAddress = async () => {
 }
 /* 打开规格选择弹窗（复用 skuList） */
 const openBuy = () => {
-  if (!currentUser?.id) {
+  if (!User?.id) {
     ElMessage.warning('请先登录')
     return
   }
@@ -435,7 +465,7 @@ const createOrder = async () => {
   }
   try {
     const { data } = await request.post('/api/order/add', {
-      user: { id: currentUser.id },
+      user: { id: User.id },
       shop: { id: product.value.shopId },
       product: { id: product.value.id },
       sku: { id: selectedSkuId.value },
@@ -486,6 +516,7 @@ const goBack = () => router.back()
 
 onMounted(async () => {
   await fetchProduct()   // 先把 product.id 拿到
+  fetchShop()          // 再用 product.shopId 拉店铺信息
   addHistory()   // 上传浏览记录
   fetchReviews()         // 再用 product.id 拉评论
   fetchFavoriteStatus()
@@ -511,6 +542,26 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.shop-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.shop-name {
+  font-weight: bold;
+}
+
+.shop-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .back-button {
@@ -601,11 +652,11 @@ onMounted(async () => {
 .review-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 50%; 
-  object-fit: cover;  
+  border-radius: 50%;
+  object-fit: cover;
   margin-right: 12px;
   margin-top: 12px;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 /* 右侧内容区 */

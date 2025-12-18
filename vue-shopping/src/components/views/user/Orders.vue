@@ -91,7 +91,7 @@
       @closed="resetReview">
       <el-form :model="reviewForm" label-width="60px">
         <el-form-item label="评分">
-          <el-rate v-model="reviewForm.score" show-text :texts="['', '', '', '', '']" />
+          <el-rate v-model="reviewForm.score" show-text :texts="['1星', '2星', '3星', '4星', '5星']" />
         </el-form-item>
         <el-form-item label="内容">
           <el-input v-model="reviewForm.content" type="textarea" :rows="4" maxlength="200" show-word-limit
@@ -111,7 +111,7 @@
       <div v-else>
         <div v-for="c in myComments" :key="c.id" class="comment-box">
           <div class="cmt-header">
-            <el-rate v-model="c.score" disabled show-score text-color="#ff9900" score-template="{value} 分" />
+            <el-rate v-model="c.score" disabled show-score score-template="{value}星" />
             <el-button type="text" size="small" style="color:#F56C6C" @click="deleteComment(c.id)">删除</el-button>
           </div>
           <div class="cmt-content">{{ c.content }}</div>
@@ -124,10 +124,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed } from 'vue'
 import request from '@/utils/request'
 
 const route = useRoute()
