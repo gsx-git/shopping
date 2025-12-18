@@ -93,20 +93,36 @@ const fetchShopOrders = async () => {
         const shopId = shopRes.data[0].id
 
         // ② 再根据店铺 id 拉订单
-        const { data } = await request.get(`/api/order/list2/${shopId}`)
-        orderList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
-            id: item.id,
-            orderNumber: item.id,
-            productId: item.productId,
-            statusNumber: item.status,
-            status: statusMap[item.status] ?? '未知',
-            date: item.createTime.slice(0, 3).join('-'),
-            img: `data:image/png;base64,${item.productImage || ''}`,
-            title: item.productName,
-            price: item.price,
-            num: item.quantity,
-        }))
-            .filter(item => targetStatus !== 0 ? item.statusNumber === targetStatus : true)
+        const { code, msg, total, data: data } = await request.get(`/api/order/list2/${shopId}`)
+
+        /* ===== 统一错误处理 ===== */
+        if (code === 400 || !data) {
+            ElMessage.info(msg || '暂无订单')
+            orderList.value = []          // 清空旧数据
+            return
+        }
+
+        /* ===== 正常解析 ===== */
+        try {
+            orderList.value = (Array.isArray(data) ? data : data.data ?? [])
+                .map(item => ({
+                    id: item.id,
+                    orderNumber: item.id,
+                    productId: item.productId,
+                    statusNumber: item.status,
+                    status: statusMap[item.status] ?? '未知',
+                    date: item.createTime.slice(0, 3).join('-'),
+                    img: `data:image/png;base64,${item.productImage || ''}`,
+                    title: item.productName,
+                    price: item.price,
+                    num: item.quantity,
+                }))
+                .filter(item => targetStatus !== 0 ? item.statusNumber === targetStatus : true)
+        } catch (e) {
+            console.error(e)
+            ElMessage.error('订单数据解析异常')
+            orderList.value = []
+        }
     } catch (e) {
         ElMessage.error('获取店铺订单失败')
     }
@@ -123,14 +139,12 @@ const shipOrder = async (row) => {
 const showLogistics = (row) => {
     ElMessage.info('物流功能待实现')
 }
-const goReview = (row) => {
-    router.push(`/shop/review/${row.id}`)
-}
-const goBack = () => router.back()
 const goOrderDetail = (row) => {
     router.push(`/user/orderdetail/${row.id}`)
 }
 const goProductDetail = (id) => router.push(`/product/${id}`)
+
+const goBack = () => router.back()
 
 onMounted(fetchShopOrders)
 </script>

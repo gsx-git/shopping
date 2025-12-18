@@ -32,7 +32,7 @@
                 <el-table-column label="商品名称" width="200">
                     <template #default="{ row }">
                         <span style="color:#409eff;cursor:pointer" @click="goProductDetail(row.id)">{{ row.name
-                            }}</span>
+                        }}</span>
                     </template>
                 </el-table-column>
 
@@ -188,8 +188,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
-import rawAxios from 'axios'
 import { Plus } from '@element-plus/icons-vue'
+import axios from 'axios'
 
 const router = useRouter()
 
@@ -293,6 +293,10 @@ async function submit() {
     if (!form.categoryId) return ElMessage.warning('请选择商品分类')
     try {
         let productId = form.id
+        /* 保存SKU 之前：把主商品价格 = 所有 SKU 最低价 */
+        const minPrice = Math.min(...skuList.value.map(s => Number(s.price)).filter(p => !isNaN(p)))
+        if (isNaN(minPrice)) return ElMessage.warning('SKU 价格填写错误')
+        form.price = minPrice
         /* 1. 保存主商品 */
         if (form.id) {
             await request.post('/api/product/update', {
@@ -308,9 +312,9 @@ async function submit() {
             const fd = new FormData()
             fd.append('productDTO', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
             fd.append('file', imageFile.value)
-            const res = await rawAxios.post(`${import.meta.env.VITE_BASE_URL}/api/product/add`, fd,
+            const res = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/product/add`, fd,
                 { headers: { 'Content-Type': undefined } })
-            productId = res.data
+            productId = res.data.data
         }
         /* 保存SKU */
         for (const s of skuList.value) {

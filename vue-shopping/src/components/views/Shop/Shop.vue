@@ -12,9 +12,14 @@
                 </div>
                 <div class="shop-card__actions">
                     <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openEdit">
-                        修改资料 </el-button>
-                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openView">
-                        查看资料 </el-button>
+                        修改资料
+                    </el-button>
+                    <!-- <el-button type="primary" size="small" plain style="margin-left: 0 !important;" @click="openView">
+                        查看资料 </el-button> -->
+                    <el-button type="primary" size="small" plain style="margin-left: 0 !important;"
+                        @click="goShopDetail">
+                        查看店铺
+                    </el-button>
                 </div>
             </div>
         </el-card>
@@ -253,6 +258,8 @@ const beforeLogo = file => {
     shopForm.logo = file
     return false
 }
+
+/* beforeUpload */
 const beforeLicense = file => {
     const isPic = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)
     const isLt2M = file.size / 1024 / 1024 < 2
@@ -265,6 +272,8 @@ const beforeLicense = file => {
 
 /* 提交（适配后端 /api/shop/update） */
 const shopEditRef = ref()
+
+/* 确认修改 */
 const confirmShopEdit = async () => {
     const valid = await shopEditRef.value.validate()
     if (!valid) return
@@ -338,11 +347,12 @@ const loadBadge = async () => {
 }
 
 /* 跳转 */
-const goProduct = idx => router.push(`/ushop/product/${idx}`)
-const goOrder = idx => router.push(`/ushop/orders/${idx + 1}`)
-
-const goAllOrders = () => { router.push('/ushop/orders/0') }
-const handleMenu = index => router.push(`/ushop/${index}`)
+/* 查看店铺详情 */
+const goShopDetail = () => router.push(`/shop/detail/${shop.value.id}`)
+const goProduct = idx => router.push(`/shop/product/${idx}`)
+const goOrder = idx => router.push(`/shop/orders/${idx + 1}`)
+const goAllOrders = () => { router.push('/shop/orders/0') }
+const handleMenu = index => router.push(`/shop/${index}`)
 
 /* 监听 shop.id */
 watch(() => shop.value.id, newId => newId && loadBadge(), { immediate: true })
