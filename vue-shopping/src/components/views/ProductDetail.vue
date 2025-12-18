@@ -14,7 +14,9 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <div class="product-img-wrap">
-            <img :src="product.img" class="product-img" />
+            <el-image :src="product.img" class="product-img" :preview-src-list="[product.img]"
+              :preview-teleported="true" :z-index="9999" fit="contain">
+            </el-image>
           </div>
         </el-col>
         <el-col :span="12">
@@ -38,30 +40,52 @@
       </el-row>
     </el-card>
 
-    <!-- 商品评价 -->
+    <!-- ① 商品评价卡片 -->
     <el-card class="review-card">
       <template #header>
         <div class="review-header">
           <span>商品评价</span>
+          <el-button v-if="reviews.length > 3" type="text" style="color:#409EFF"
+            @click="showMoreReviews = true">更多评论</el-button>
         </div>
       </template>
-      <div v-if="reviews.length === 0" class="no-reviews">
-        暂无评价，购买后可以进行评价！
-      </div>
-      <el-row v-else :gutter="20">
-        <el-col v-for="review in reviews" :key="review.id" :span="24">
-          <div class="review-item">
-            <div class="review-avatar">
-              <img :src="review.avatar" class="avatar" />
+
+      <div v-if="reviews.length === 0" class="no-reviews">暂无评价，购买后可以进行评价！</div>
+
+      <!-- 仅展示前 3 条 -->
+      <div v-else class="review-list">
+        <div v-for="review in (reviews.length > 3 ? reviews.slice(0, 3) : reviews)" :key="review.id" class="review-box">
+          <img :src="review.avatar" class="review-avatar" />
+          <div class="review-main">
+            <div class="review-line">
+              <span class="review-user">{{ review.username }}</span>
+              <el-rate v-model="review.score" disabled show-score text-color="#ff9900" score-template="{value}" />
             </div>
-            <div class="review-content">
-              <div class="review-user">{{ review.username }}</div>
-              <div class="review-text">{{ review.text }}</div>
-            </div>
+            <div class="review-text">{{ review.text }}</div>
+            <div class="review-time">{{ fmtDate(review.createTime) }}</div>
           </div>
-        </el-col>
-      </el-row>
+        </div>
+      </div>
     </el-card>
+
+    <!-- ② 更多评论弹窗 -->
+    <el-dialog title="更多评论" v-model="showMoreReviews" width="520px" top="10vh">
+      <div v-if="reviews.length === 0" class="no-reviews">暂无评价</div>
+      <div v-else class="review-list">
+        <div v-for="r in reviews" :key="r.id" class="review-box">
+          <img :src="r.avatar" class="review-avatar" />
+          <div class="review-main">
+            <div class="review-line">
+              <span class="review-user">{{ r.username }}</span>
+              <el-rate v-model="r.score" disabled show-score text-color="#ff9900" score-template="{value}" />
+            </div>
+            <div class="review-text">{{ r.text }}</div>
+            <div class="review-time">{{ fmtDate(r.createTime) }}</div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- 规格 & 数量选择弹框 -->
     <el-dialog v-model="showSku" title="选择规格" width="420px" :close-on-click-modal="false">
       <el-form label-width="70px">
@@ -72,17 +96,16 @@
             </el-radio>
           </el-radio-group>
         </el-form-item>
-
         <el-form-item label="数量">
           <el-input-number v-model="quantity" :min="1" :max="selectedSku?.stock || 1" size="small" />
         </el-form-item>
       </el-form>
-
       <template #footer>
         <el-button @click="showSku = false">取消</el-button>
         <el-button type="primary" @click="confirmAddCart">确定</el-button>
       </template>
     </el-dialog>
+
     <!-- 购买规格 & 数量选择 -->
     <el-dialog v-model="showBuy" title="选择规格" width="420px" :close-on-click-modal="false">
       <el-form label-width="70px">
@@ -183,6 +206,12 @@ const payAmount = ref(0)    // 待支付金额
 let orderId = null          // 待支付订单号
 let collectid = null        // 收藏项ID（用于取消收藏）
 
+// 将 [yyyy,MM,dd,HH,mm] 格式化成 "YYYY-MM-DD HH:mm"
+const fmtDate = arr => {
+  if (!Array.isArray(arr) || arr.length < 5) return ''
+  const [y, M, d, H, m] = arr.map(v => String(v).padStart(2, '0'))
+  return `${y}-${M}-${d} ${H}:${m}`
+}
 
 /* 当前用户 */
 const currentUser = (() => {
@@ -224,11 +253,13 @@ const fetchReviews = async () => {
     const { data } = await request.get(`/api/productComment/list/${id}`)
     reviews.value = (Array.isArray(data) ? data : data.data ?? []).map(r => ({
       id: r.id,
+      score: r.score || 5,
       username: r.username,
       avatar: r.userImage
         ? `data:image/png;base64,${r.userImage}`
         : 'https://picsum.photos/50/50?random=' + r.id,
-      text: r.content
+      text: r.content,
+      createTime: r.createTime || []
     }))
   } catch (e) {
     ElMessage.error('获取评价失败')
@@ -447,6 +478,9 @@ const goAddAddress = () => {
   router.push('/user/address?back=product-' + product.value.id)
 }
 
+/* 弹窗开关 */
+const showMoreReviews = ref(false)
+
 /* 返回 */
 const goBack = () => router.back()
 
@@ -485,15 +519,22 @@ onMounted(async () => {
 }
 
 .product-img-wrap {
+  width: 600px;
+  height: 450px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .product-img {
   width: 100%;
-  height: 300px;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
+  /* object-fit: cover; */
+  cursor: pointer;
 }
 
 .product-info {
@@ -536,6 +577,74 @@ onMounted(async () => {
 .no-reviews {
   text-align: center;
   padding: 20px 0;
+  color: #999;
+}
+
+/* 统一列表容器 */
+.review-list {
+  padding: 0 8px;
+}
+
+/* 单条评价 */
+.review-box {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.review-box:last-child {
+  border: none;
+}
+
+/* 头像 */
+.review-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; 
+  object-fit: cover;  
+  margin-right: 12px;
+  margin-top: 12px;
+  flex-shrink: 0; 
+}
+
+/* 右侧内容区 */
+.review-main {
+  flex: 1;
+}
+
+/* 第一行：用户名 + 评分 */
+.review-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.review-user {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* 评论内容 */
+.review-text {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* 时间 */
+.review-time {
+  font-size: 12px;
+  color: #999;
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* 暂无提示 */
+.no-reviews {
+  text-align: center;
+  padding: 30px 0;
   color: #999;
 }
 
