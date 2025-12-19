@@ -34,7 +34,7 @@
                         <!-- 评分 -->
                         <div class="product-score">
                             <el-rate v-model="productScore" disabled show-score score-template="{value} 分"
-                                text-color="#ff5000" />
+                                text-color="#ff9900" />
                         </div>
 
                         <!-- 价格 + 销量 -->
