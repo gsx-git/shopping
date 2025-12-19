@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/components/Layout.vue'
+import Admin from '@/components/views/Admin/Admin.vue'
+import { use } from 'echarts'
 
 const routes = [
   {
@@ -9,6 +11,8 @@ const routes = [
       { path: '', name: 'Home', component: () => import('@/components/views/Home.vue') },
       { path: 'category/:id?', name: 'Category', component: () => import('@/components/views/Category.vue') },
       { path: 'cart', name: 'Cart', component: () => import('@/components/views/Cart.vue') },
+      { path: 'search', name: 'Search', component: () => import('@/components/views/Search.vue') },
+      { path: 'product/:id', name: 'ProductDetail', component: () => import('@/components/views/ProductDetail.vue') },
       { path: 'user', name: 'User', component: () => import('@/components/views/user/User.vue') },
       { path: 'user/orders/:id', name: 'Orders', component: () => import('@/components/views/user/Orders.vue') },
       { path: 'user/orderdetail/:orderId', name: 'OrderDetail', component: () => import('@/components/views/user/OrderDetail.vue') },
@@ -21,8 +25,17 @@ const routes = [
       { path: 'shop/orders/:id', name: 'ShopOrders', component: () => import('@/components/views/Shop/ShopOrders.vue') },
       { path: 'shop/product', name: 'ShopProduct', component: () => import('@/components/views/Shop/ShopProduct.vue'), meta: { title: '商品管理' } },
       { path: 'shop/sales/:id', name: 'ShopSales', component: () => import('@/components/views/Shop/ShopSales.vue') },
-      { path: 'search', name: 'Search', component: () => import('@/components/views/Search.vue') },
-      { path: 'product/:id', name: 'ProductDetail', component: () => import('@/components/views/ProductDetail.vue') },
+    ]
+  },
+  {
+    path: '/admin',
+    component: Admin,
+    children: [
+      { path: '', name: 'Profile', component: () => import('@/components/views/Admin/Profile.vue') },
+      { path: 'order', name: 'AdminOrder', component: () => import('@/components/views/Admin/Order.vue') },
+      { path: 'product', name: 'AdminProduct', component: () => import('@/components/views/Admin/Product.vue') },
+      { path: 'shop', name: 'AdminShop', component: () => import('@/components/views/Admin/Shop.vue') },
+      { path: 'user', name: 'AdminUser', component: () => import('@/components/views/Admin/User.vue') },
     ]
   }
 ]
