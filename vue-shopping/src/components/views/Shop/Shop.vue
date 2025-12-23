@@ -296,10 +296,7 @@ const confirmShopEdit = async () => {
         if (shopForm.licenseUrl) fd.append('licenseUrl', shopForm.licenseUrl) // 对应 licenseUrl
 
         // 3. 请求
-        await axios.post(
-            `${import.meta.env.VITE_BASE_URL}/api/shop/update`,
-            fd
-        )
+        await axios.post(`${import.meta.env.VITE_BASE_URL}/api/shop/update`, fd)
         ElMessage.success('店铺资料已更新')
         await loadShop()
         shopEditVisible.value = false

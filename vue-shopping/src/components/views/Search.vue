@@ -72,7 +72,7 @@ const loadData = async () => {
     pageSize: pageSize.value,
     param: {
       name: key,
-      status: 2          // ✅ 只查已上架商品
+      status: 2// ✅ 只查已上架商品
     }
   })
   list.value = res.content
@@ -89,8 +89,7 @@ watch(() => route.query.q, () => {
   pageNum.value = 1
   loadData()
 }, { immediate: true })
-
-/* 获取商品详情 */
+/* 提取 SKU 规格属性值 */
 const getAllPropertyValues = (specsStr) => {
   try {
     const specs = JSON.parse(specsStr);
