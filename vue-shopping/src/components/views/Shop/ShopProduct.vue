@@ -52,8 +52,9 @@
 
                 <el-table-column label="状态" width="100">
                     <template #default="{ row }">
-                        <el-tag :type="row.status === 2 ? 'success' : row.status === 1 ? 'warning' : 'info'">
-                            {{ { 0: '未审核', 1: '未上架', 2: '已上架' }[row.status] || '未知' }}
+                        <el-tag :type="row.status === 0 ? 'warning' : row.status === 1 ? 'info' :
+                            row.status === 2 ? 'success' : 'danger'">
+                            {{ { 0: '未审核', 1: '未上架', 2: '已上架', 3: '已驳回' }[row.status] || '未知' }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -62,7 +63,7 @@
                     <template #default="{ row }">
                         <el-button type="primary" size="small" @click="openEdit(row)">编辑</el-button>
                         <el-button size="small" @click="toggleStatus(row)">
-                            {{ { 0: '上架', 1: '上架', 2: '下架' }[row.status] }}
+                            {{ { 0: '上架', 1: '上架', 2: '下架' ,3:'上架'}[row.status] }}
                         </el-button>
                         <el-popconfirm title="确定删除该商品吗？" @confirm="doDel(row.id)">
                             <template #reference>
@@ -244,6 +245,7 @@ const handlePageChange = val => { pageNum.value = val; loadData() }
 /* 上下架 */
 const toggleStatus = async (row) => {
     if (row.status === 0) { ElMessage.warning('商品未审核，无法上下架'); return }
+    if (row.status === 3) { ElMessage.error('商品已驳回，无法上下架'); return }
     const next = row.status === 2 ? 1 : 2
     try {
         await request.post('/api/product/update', { id: row.id, status: next })
