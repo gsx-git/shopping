@@ -51,16 +51,16 @@
                             <el-input v-model="profileForm.email" :disabled="!isEditing" />
                         </el-form-item>
                     </el-col>
-                    <el-col :span="12">
+                    <!-- <el-col :span="12">
                         <el-form-item label="所属部门" prop="department">
                             <el-input v-model="profileForm.department" :disabled="!isEditing" />
                         </el-form-item>
-                    </el-col>
+                    </el-col> -->
                 </el-row>
-                <el-form-item label="个人简介" prop="intro">
+                <!-- <el-form-item label="个人简介" prop="intro">
                     <el-input v-model="profileForm.intro" type="textarea" :rows="4" :disabled="!isEditing"
                         placeholder="请输入个人简介" />
-                </el-form-item>
+                </el-form-item> -->
                 <el-form-item v-if="isEditing">
                     <el-button type="primary" @click="saveProfile">保存修改</el-button>
                     <el-button @click="cancelEdit">取消</el-button>
@@ -163,8 +163,27 @@ onMounted(() => {
 
 // 格式化加入时间
 const formatJoinTime = () => {
-    // 模拟数据，实际项目中从接口获取
-    return '2025-01-15'
+    console.log(adminInfo.value)
+    if (!adminInfo.value.createTime) return '2023-01-01'
+
+    // 从数组创建Date对象: [year, month, day, hour, minute, second, nanosecond]
+    const createTimeArray = adminInfo.value.createTime
+    if (Array.isArray(createTimeArray) && createTimeArray.length >= 7) {
+        // 注意：月份需要减1，因为JavaScript的月份是从0开始的
+        const date = new Date(
+            createTimeArray[0],      // 年
+            createTimeArray[1] - 1,  // 月（需要减1）
+            createTimeArray[2],      // 日
+            createTimeArray[3],      // 时
+            createTimeArray[4],      // 分
+            createTimeArray[5],      // 秒
+            Math.floor(createTimeArray[6] / 1000000) // 毫秒（纳秒转毫秒）
+        )
+
+        return date.toLocaleDateString()
+    }
+
+    return '2023-01-01'
 }
 
 // 编辑资料

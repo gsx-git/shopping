@@ -44,16 +44,16 @@
                             </el-icon>
                             <span>用户管理</span>
                         </template>
-                        <el-menu-item index="/admin/user">普通用户</el-menu-item>
-                        <el-menu-item index="/admin/shop">店铺</el-menu-item>
+                        <el-menu-item index="/admin/user">查看用户</el-menu-item>
+                        <el-menu-item index="/admin/shop">查看店铺</el-menu-item>
                     </el-sub-menu>
 
-                    <el-menu-item index="/admin/order">
+                    <!-- <el-menu-item index="/admin/order">
                         <el-icon>
                             <Tickets />
                         </el-icon>
                         <span>订单管理</span>
-                    </el-menu-item>
+                    </el-menu-item> -->
 
                     <el-menu-item index="/admin/product">
                         <el-icon>
@@ -103,7 +103,7 @@ const handleCommand = (cmd) => {
     if (cmd === 'logout') {
         localStorage.removeItem('system-user')
         ElMessage.success('已退出')
-        router.replace('/login')
+        router.replace('/')
     }
 }
 </script>

@@ -10,140 +10,46 @@
                     <el-input v-model="searchForm.shopName" placeholder="请输入店铺名称" clearable style="width: 200px;" />
                 </el-form-item>
                 <el-form-item label="审核状态">
-                    <el-select v-model="searchForm.auditStatus" placeholder="全部" clearable>
-                        <el-option label="待审核" value="pending" />
-                        <el-option label="审核通过" value="passed" />
-                        <el-option label="审核驳回" value="rejected" />
+                    <el-select v-model="searchForm.auditStatus" placeholder="全部" clearable style="width: 100px">
+                        <el-option label="待审核" value=0 />
+                        <el-option label="下架" value=1 />
+                        <el-option label="上架" value=2 />
+                        <el-option label="已驳回" value=3 />
                     </el-select>
                 </el-form-item>
                 <el-form-item label="商品分类">
-                    <el-select v-model="searchForm.category" placeholder="全部" clearable>
-                        <el-option label="电子产品" value="electronics" />
-                        <el-option label="服装鞋帽" value="clothing" />
-                        <el-option label="食品生鲜" value="food" />
-                        <el-option label="家居用品" value="home" />
-                        <el-option label="美妆护肤" value="cosmetics" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="提交时间">
-                    <el-date-picker v-model="searchForm.dateRange" type="daterange" range-separator="至"
-                        start-placeholder="开始日期" end-placeholder="结束日期" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+                    <el-cascader v-model="categoryCascaderValue" :options="categoryTree" :props="cascaderProps"
+                        clearable placeholder="全部" style="width: 160px" @change="onCategoryChange" />
                 </el-form-item>
                 <el-form-item>
-                    <el-button type="primary" @click="fetchProducts">
-                        <el-icon>
+                    <el-button type="primary" @click="fetchProducts"> <el-icon>
                             <Search />
-                        </el-icon>
-                        搜索
+                        </el-icon> 搜索
                     </el-button>
-                    <el-button @click="resetSearch">
-                        <el-icon>
+                    <el-button @click="resetSearch"> <el-icon>
                             <Refresh />
-                        </el-icon>
-                        重置
-                    </el-button>
+                        </el-icon> 重置 </el-button>
                 </el-form-item>
             </el-form>
         </el-card>
-
-        <!-- 商品审核统计 -->
-        <el-row :gutter="20" style="margin-top: 20px;">
-            <el-col :span="6">
-                <el-card class="stat-card">
-                    <div class="stat-content">
-                        <p class="stat-label">待审核商品</p>
-                        <p class="stat-value">{{ statData.pendingCount }}</p>
-                        <p class="stat-change">
-                            <el-icon>
-                                <Clock />
-                            </el-icon>
-                            需及时处理
-                        </p>
-                    </div>
-                </el-card>
-            </el-col>
-            <el-col :span="6">
-                <el-card class="stat-card">
-                    <div class="stat-content">
-                        <p class="stat-label">今日审核通过</p>
-                        <p class="stat-value">{{ statData.todayPassedCount }}</p>
-                        <p class="stat-change text-green">
-                            <el-icon>
-                                <Check />
-                            </el-icon>
-                            +{{ statData.todayPassedRate }}%
-                        </p>
-                    </div>
-                </el-card>
-            </el-col>
-            <el-col :span="6">
-                <el-card class="stat-card">
-                    <div class="stat-content">
-                        <p class="stat-label">今日审核驳回</p>
-                        <p class="stat-value">{{ statData.todayRejectedCount }}</p>
-                        <p class="stat-change text-red">
-                            <el-icon>
-                                <Close />
-                            </el-icon>
-                            +{{ statData.todayRejectedRate }}%
-                        </p>
-                    </div>
-                </el-card>
-            </el-col>
-            <el-col :span="6">
-                <el-card class="stat-card">
-                    <div class="stat-content">
-                        <p class="stat-label">本月审核总数</p>
-                        <p class="stat-value">{{ statData.monthTotalCount }}</p>
-                        <p class="stat-change">
-                            <el-icon>
-                                <Calendar />
-                            </el-icon>
-                            完成率 {{ statData.monthCompletionRate }}%
-                        </p>
-                    </div>
-                </el-card>
-            </el-col>
-        </el-row>
 
         <!-- 商品列表 -->
         <el-card class="table-card" style="margin-top: 20px;">
             <template #header>
                 <div class="table-header">
                     <span>商品审核列表</span>
-                    <div>
-                        <el-button type="primary" size="small" @click="batchAudit('passed')">
-                            <el-icon>
-                                <Check />
-                            </el-icon>
-                            批量通过
-                        </el-button>
-                        <el-button type="danger" size="small" @click="batchAudit('rejected')" style="margin-left: 8px;">
-                            <el-icon>
-                                <Close />
-                            </el-icon>
-                            批量驳回
-                        </el-button>
-                    </div>
                 </div>
             </template>
 
-            <el-table :data="productList" border stripe v-loading="loading" style="width: 100%;"
+            <el-table :data="productList" stripe v-loading="loading" style="width: 100%;"
                 @selection-change="handleSelectionChange" ref="productTableRef">
                 <el-table-column type="selection" width="55" />
                 <el-table-column prop="id" label="商品ID" width="80" />
-                <el-table-column prop="productName" label="商品名称" min-width="200" />
-                <el-table-column prop="shopName" label="所属店铺" width="120" />
-                <el-table-column prop="category" label="商品分类" width="100">
+                <el-table-column prop="name" label="商品名称" min-width="150" />
+                <el-table-column prop="shopName" label="所属店铺" min-width="120" />
+                <!-- <el-table-column label="商品分类" width="100">
                     <template #default="scope">
-                        <el-tag type="info">
-                            {{
-                                scope.row.category === 'electronics' ? '电子产品' :
-                                    scope.row.category === 'clothing' ? '服装鞋帽' :
-                                        scope.row.category === 'food' ? '食品生鲜' :
-                                            scope.row.category === 'home' ? '家居用品' : '美妆护肤'
-                            }}
-                        </el-tag>
+                        <el-tag type="info">{{ fmtCategoryName(scope.row.categoryId) }}</el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column prop="price" label="商品价格" width="100">
@@ -151,20 +57,29 @@
                         ¥{{ scope.row.price }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="submitTime" label="提交时间" min-width="180" />
-                <el-table-column prop="auditStatus" label="审核状态" width="100">
+                <el-table-column label="商品规格" width="140">
                     <template #default="scope">
-                        <el-tag :type="scope.row.auditStatus === 'pending' ? 'warning' :
-                                scope.row.auditStatus === 'passed' ? 'success' : 'danger'
+                        <span>{{ getMainSpec(scope.row.skus) }}</span>
+                    </template>
+                </el-table-column> -->
+                <el-table-column label="提交时间" min-width="100">
+                    <template #default="scope">
+                        {{ formatTime(scope.row.createTime) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="auditStatus" label="商品状态" width="100">
+                    <template #default="scope">
+                        <el-tag :type="scope.row.status === 0 ? 'warning' :
+                            scope.row.status === 3 ? 'danger' : scope.row.status === 2 ? 'success' : 'info'
                             ">
                             {{
-                                scope.row.auditStatus === 'pending' ? '待审核' :
-                                    scope.row.auditStatus === 'passed' ? '审核通过' : '审核驳回'
+                                scope.row.status === 0 ? '待审核' :
+                                    scope.row.status === 3 ? '已驳回' : scope.row.status === 2 ? '已上架' : '下架'
                             }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="200" fixed="right">
+                <el-table-column label="操作" width="250" fixed="right">
                     <template #default="scope">
                         <el-button size="small" type="primary" @click="viewProduct(scope.row)">
                             <el-icon>
@@ -172,15 +87,16 @@
                             </el-icon>
                             查看
                         </el-button>
-                        <el-button size="small" type="success" @click="auditProduct(scope.row, 'passed')"
-                            v-if="scope.row.auditStatus === 'pending'">
+                        <el-button size="small" type="success"
+                            @click="auditProduct(scope.row, 1), console.log('auditProduct', row);"
+                            v-if="scope.row.status === 0">
                             <el-icon>
                                 <Check />
                             </el-icon>
                             通过
                         </el-button>
-                        <el-button size="small" type="danger" @click="auditProduct(scope.row, 'rejected')"
-                            v-if="scope.row.auditStatus === 'pending'">
+                        <el-button size="small" type="danger" @click="auditProduct(scope.row, 3)"
+                            v-if="scope.row.status === 0">
                             <el-icon>
                                 <Close />
                             </el-icon>
@@ -198,126 +114,72 @@
         </el-card>
 
         <!-- 商品详情弹窗 -->
-        <el-dialog v-model="showProductDetailDialog" title="商品详情" width="800px" :close-on-click-modal="false">
-            <div class="product-detail">
-                <el-row :gutter="20">
-                    <!-- 商品图片 -->
-                    <el-col :span="8">
-                        <el-carousel height="300px" indicator-position="outside">
-                            <el-carousel-item v-for="(img, index) in currentProduct.images" :key="index">
-                                <img :src="img" alt="商品图片" style="width: 100%; height: 100%; object-fit: contain;" />
-                            </el-carousel-item>
-                        </el-carousel>
-                    </el-col>
+        <el-dialog v-model="showProductDetailDialog" title="商品详情" width="600" top="6vh">
+            <el-row :gutter="16">
+                <!-- 左侧图片 -->
+                <el-col :span="10">
+                    <el-image :src="imgSrc" fit="cover" style="width: 100%; height: 200px; border-radius: 4px"
+                        :preview-src-list="[imgSrc]" />
+                </el-col>
 
-                    <!-- 商品基本信息 -->
-                    <el-col :span="16">
-                        <el-descriptions :column="2" border>
-                            <el-descriptions-item label="商品ID" prop="id" />
-                            <el-descriptions-item label="商品名称" :span="1" prop="productName" />
-                            <el-descriptions-item label="所属店铺" prop="shopName" />
-                            <el-descriptions-item label="商品分类">
-                                <el-tag type="info">
-                                    {{
-                                        currentProduct.category === 'electronics' ? '电子产品' :
-                                            currentProduct.category === 'clothing' ? '服装鞋帽' :
-                                                currentProduct.category === 'food' ? '食品生鲜' :
-                                                    currentProduct.category === 'home' ? '家居用品' : '美妆护肤'
-                                    }}
-                                </el-tag>
-                            </el-descriptions-item>
-                            <el-descriptions-item label="商品价格">
-                                <span style="color: var(--orange-dark); font-weight: 600;">¥{{ currentProduct.price
-                                    }}</span>
-                            </el-descriptions-item>
-                            <el-descriptions-item label="库存数量" prop="stockCount" />
-                            <el-descriptions-item label="提交时间" prop="submitTime" />
-                            <el-descriptions-item label="审核状态">
-                                <el-tag :type="currentProduct.auditStatus === 'pending' ? 'warning' :
-                                        currentProduct.auditStatus === 'passed' ? 'success' : 'danger'
-                                    ">
-                                    {{
-                                        currentProduct.auditStatus === 'pending' ? '待审核' :
-                                            currentProduct.auditStatus === 'passed' ? '审核通过' : '审核驳回'
-                                    }}
-                                </el-tag>
-                            </el-descriptions-item>
-                        </el-descriptions>
-                    </el-col>
-                </el-row>
+                <!-- 右侧信息 -->
+                <el-col :span="14">
+                    <div style="margin-bottom: 8px; font-size: 16px; font-weight: bold">
+                        {{ currentProduct.name }}
+                    </div>
+                    <div style="font-size: 14px; color: #666; line-height: 24px">
+                        <div>所属店铺：{{ currentProduct.shopName }}</div>
+                        <div>商品分类：{{ fmtCategoryName(currentProduct.categoryId) }}</div>
+                        <div>
+                            商品价格：
+                            <span style="color: #f56c6c; font-size: 18px">¥{{ currentProduct.price }}</span>
+                        </div>
+                        <div>提交时间：{{ formatTime(currentProduct.createTime) }}</div>
+                        <!-- 新增 SKU 展示 -->
+                        <div style="margin-top:8px">商品规格：</div>
+                        <div style="padding-left:12px;font-size:13px;color:#555">
+                            <div v-for="(s, i) in currentProduct.skus" :key="s.id" style="line-height:22px">
+                                {{ i + 1 }}.
+                                <span class="sku-spec">{{ fmtSpecs(s.specs) }}</span>
+                                <span class="sku-price">¥{{ s.price.toFixed(2) }}</span>
+                                <span class="sku-stock">库存{{ s.stock }}</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px">
+                            状态：
+                            <el-tag :type="currentProduct.status === 0 ? 'warning' : currentProduct.status === 3
+                                ? 'danger' : currentProduct.status === 2 ? 'success' : 'info'">
+                                {{ currentProduct.status === 0 ? '待审核' : currentProduct.status === 3
+                                    ? '已驳回' : currentProduct.status === 2 ? '已上架' : '下架' }}
+                            </el-tag>
+                        </div>
+                    </div>
 
-                <!-- 商品详情 -->
-                <el-card shadow="hover" style="margin-top: 20px;">
-                    <template #header>
-                        <span style="color: var(--orange-dark); font-weight: 600;">商品详情</span>
-                    </template>
-                    <div class="product-desc" v-html="currentProduct.description"></div>
-                </el-card>
-
-                <!-- 审核操作区 -->
-                <div class="audit-actions" v-if="currentProduct.auditStatus === 'pending'"
-                    style="margin-top: 20px; text-align: right;">
-                    <el-button type="success" @click="auditProduct(currentProduct, 'passed')">
-                        <el-icon>
-                            <Check />
-                        </el-icon>
-                        审核通过
-                    </el-button>
-                    <el-button type="danger" @click="auditProduct(currentProduct, 'rejected')"
-                        style="margin-left: 8px;">
-                        <el-icon>
-                            <Close />
-                        </el-icon>
-                        审核驳回
-                    </el-button>
-                </div>
-            </div>
+                    <!-- 底部按钮 -->
+                    <div style="margin-top: 16px; text-align: right">
+                        <el-button v-if="currentProduct.status === 0" type="success"
+                            @click="auditProduct(currentProduct, 1)">
+                            通过
+                        </el-button>
+                        <el-button v-if="currentProduct.status === 0" type="danger"
+                            @click="auditProduct(currentProduct, 3)">
+                            驳回
+                        </el-button>
+                        <el-button @click="showProductDetailDialog = false">关闭</el-button>
+                    </div>
+                </el-col>
+            </el-row>
         </el-dialog>
 
-        <!-- 审核弹窗 -->
-        <el-dialog v-model="showAuditDialog" title="商品审核" width="500px" :close-on-click-modal="false">
-            <el-form :model="auditForm" label-width="80px">
-                <el-form-item label="审核结果">
-                    <el-radio-group v-model="auditForm.result">
-                        <el-radio label="passed">通过</el-radio>
-                        <el-radio label="rejected">驳回</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="审核意见" v-if="auditForm.result === 'rejected'">
-                    <el-input v-model="auditForm.opinion" type="textarea" :rows="4" placeholder="请输入驳回理由" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="showAuditDialog = false">取消</el-button>
-                <el-button type="primary" @click="confirmAudit">确认审核</el-button>
-            </template>
-        </el-dialog>
-
-        <!-- 批量审核弹窗 -->
-        <el-dialog v-model="showBatchAuditDialog" title="批量审核" width="500px" :close-on-click-modal="false">
-            <el-form :model="batchAuditForm" label-width="80px">
-                <el-form-item label="审核结果">
-                    <el-radio-group v-model="batchAuditForm.result">
-                        <el-radio label="passed">通过</el-radio>
-                        <el-radio label="rejected">驳回</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="审核意见" v-if="batchAuditForm.result === 'rejected'">
-                    <el-input v-model="batchAuditForm.opinion" type="textarea" :rows="4" placeholder="请输入驳回理由" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="showBatchAuditDialog = false">取消</el-button>
-                <el-button type="primary" @click="confirmBatchAudit">确认批量审核</el-button>
-            </template>
-        </el-dialog>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, View, Check, Close, Clock, Calendar } from '@element-plus/icons-vue'
+import request from '@/utils/request'
+import axios from 'axios'
 
 // 加载状态
 const loading = ref(false)
@@ -327,7 +189,7 @@ const searchForm = reactive({
     productName: '',
     shopName: '',
     auditStatus: '',
-    category: '',
+    categoryId: null,
     dateRange: []
 })
 
@@ -354,7 +216,6 @@ const statData = reactive({
 
 // 弹窗状态
 const showProductDetailDialog = ref(false)
-const showAuditDialog = ref(false)
 const showBatchAuditDialog = ref(false)
 
 // 当前选中商品
@@ -376,39 +237,23 @@ const batchAuditForm = reactive({
 // 表格引用
 const productTableRef = ref(null)
 
-// 模拟获取商品列表
+// 获取商品列表
 const fetchProducts = async () => {
     loading.value = true
     try {
-        // 模拟接口请求
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        // 模拟数据
-        productList.value = Array.from({ length: pagination.pageSize }, (_, index) => {
-            const auditStatusList = ['pending', 'passed', 'rejected']
-            const auditStatus = auditStatusList[Math.floor(Math.random() * auditStatusList.length)]
-            const categoryList = ['electronics', 'clothing', 'food', 'home', 'cosmetics']
-            const category = categoryList[Math.floor(Math.random() * categoryList.length)]
-
-            return {
-                id: (pagination.pageNum - 1) * pagination.pageSize + index + 1,
-                productName: `商品${(pagination.pageNum - 1) * pagination.pageSize + index + 1} - ${['手机', '电脑', 'T恤', '零食', '家具'][Math.floor(Math.random() * 5)]}`,
-                shopName: `店铺${Math.floor(Math.random() * 100)}`,
-                category,
-                price: (Math.random() * 1000 + 10).toFixed(2),
-                stockCount: Math.floor(Math.random() * 1000) + 10,
-                submitTime: '2025-' + String(Math.floor(Math.random() * 12) + 1).padStart(2, '0') + '-' + String(Math.floor(Math.random() * 28) + 1).padStart(2, '0') + ' ' + String(Math.floor(Math.random() * 24)).padStart(2, '0') + ':' + String(Math.floor(Math.random() * 60)).padStart(2, '0'),
-                auditStatus,
-                auditOpinion: auditStatus === 'rejected' ? '商品信息不符合平台规范' : '',
-                images: [
-                    `https://picsum.photos/400/400?random=${(pagination.pageNum - 1) * pagination.pageSize + index + 1}`,
-                    `https://picsum.photos/400/400?random=${(pagination.pageNum - 1) * pagination.pageSize + index + 2}`
-                ],
-                description: `<p>这是商品的详细描述信息，包含商品的功能、特点、使用方法等。</p><p>商品材质：${['塑料', '金属', '纯棉', '实木'][Math.floor(Math.random() * 4)]}</p><p>商品尺寸：${Math.floor(Math.random() * 100)} x ${Math.floor(Math.random() * 100)} x ${Math.floor(Math.random() * 100)}mm</p>`
+        console.log('searchForm.auditStatus', searchForm.auditStatus)
+        const res = await request.post('/api/product/admin/listAll', {
+            pageNum: pagination.pageNum,
+            pageSize: pagination.pageSize,
+            param: {
+                productName: searchForm.productName || null,
+                shopName: searchForm.shopName || null,
+                categoryId: searchForm.categoryId || null,
+                status: searchForm.auditStatus === '' ? null : searchForm.auditStatus,
             }
         })
-
-        pagination.total = 189 // 模拟总条数
+        productList.value = res.data || []
+        pagination.total = res.total || 0
     } catch (error) {
         ElMessage.error('获取商品列表失败')
         console.error(error)
@@ -417,12 +262,45 @@ const fetchProducts = async () => {
     }
 }
 
+/* 取第一款 SKU 的规格文本用于列表 */
+function getMainSpec(skus = []) {
+    if (!skus.length) return '-'
+    try {
+        const specObj = JSON.parse(skus[0].specs || '{}')
+        return Object.values(specObj).join(' · ')
+    } catch {
+        return skus[0].specs || '-'
+    }
+}
+
+/* JSON -> 扁平字符串  */
+const fmtSpecs = (specCell = '') => {
+    if (!specCell.trim()) return ''
+    try {
+        // 正常情况：后端存的是 JSON 字符串
+        const obj = JSON.parse(specCell)
+        return Object.entries(obj)
+            .map(([k, v]) => `${k}:${v}`)   // 无空格
+            .join(',')                      // 逗号分隔
+    } catch {
+        // 容错：本身已是“红|128G”这类老数据
+        return specCell.includes('|') ? specCell.split('|').join(',') : specCell
+    }
+}
+/* 格式化时间数组为字符串 */
+function formatTime(arr) {
+    if (!Array.isArray(arr) || arr.length < 6) return '-'
+    const [y, M, d, h, m, s] = arr
+    return `${y}-${String(M).padStart(2, '0')}-${String(d).padStart(2, '0')} 
+    ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
 // 重置搜索
 const resetSearch = () => {
     searchForm.productName = ''
     searchForm.shopName = ''
     searchForm.auditStatus = ''
-    searchForm.category = ''
+    searchForm.categoryId = null   // 级联选择器会自动清空
     searchForm.dateRange = []
     pagination.pageNum = 1
     fetchProducts()
@@ -434,87 +312,89 @@ const viewProduct = (product) => {
     showProductDetailDialog.value = true
 }
 
+const imgSrc = computed(() => {
+    const src = currentProduct.value.productImg
+    if (!src) return ''                        // 没有图时直接空，避免 data:undefined
+    return src.startsWith('data:') ? src : `data:image/png;base64,${src}`
+})
 // 审核商品
 const auditProduct = (product, result) => {
     currentProduct.value = { ...product }
     auditForm.result = result
     auditForm.opinion = ''
-    showAuditDialog.value = true
+    confirmAudit()
 }
 
 // 确认审核
 const confirmAudit = async () => {
-    if (auditForm.result === 'rejected' && !auditForm.opinion) {
-        ElMessage.warning('请输入驳回理由')
-        return
-    }
-
     try {
-        // 模拟接口请求
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        // 更新商品状态
-        currentProduct.value.auditStatus = auditForm.result
-        currentProduct.value.auditOpinion = auditForm.opinion
-
-        // 更新列表中的状态
-        const index = productList.value.findIndex(item => item.id === currentProduct.value.id)
-        if (index !== -1) {
-            productList.value[index].auditStatus = auditForm.result
-            productList.value[index].auditOpinion = auditForm.opinion
-        }
-
-        ElMessage.success(`商品${auditForm.result === 'passed' ? '审核通过' : '审核驳回'}`)
-        showAuditDialog.value = false
-        showProductDetailDialog.value = false
-    } catch (error) {
-        ElMessage.error('审核操作失败')
-        console.error(error)
+        await axios.post(
+            `${import.meta.env.VITE_BASE_URL}/api/product/update`,
+            { id: currentProduct.value.id, status: auditForm.result }
+        );
+        ElMessage.success(`商品${auditForm.result === 1 ? '审核通过' : '审核驳回'}`);
+        showProductDetailDialog.value = false;
+    } catch (e) {
+        ElMessage.error('审核操作失败');
+        console.error(e);        // 方便调试
+        return;                  // 失败就终止，不再刷新
     }
-}
+    await fetchProducts();     // 就是你原来的 loadData()
+};
 
-// 批量审核
-const batchAudit = (result) => {
-    if (selectedProducts.value.length === 0) {
-        ElMessage.warning('请选择要审核的商品')
-        return
-    }
+/* ---------- 1. 级联所需数据 ---------- */
+const categoryTree = ref([])          // 两级树
+const cascaderProps = { value: 'id', label: 'name', children: 'children' }
 
-    batchAuditForm.result = result
-    batchAuditForm.opinion = ''
-    showBatchAuditDialog.value = true
-}
-
-// 确认批量审核
-const confirmBatchAudit = async () => {
-    if (batchAuditForm.result === 'rejected' && !batchAuditForm.opinion) {
-        ElMessage.warning('请输入驳回理由')
-        return
-    }
-
-    try {
-        // 模拟接口请求
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // 更新选中商品的状态
-        selectedProducts.value.forEach(product => {
-            const index = productList.value.findIndex(item => item.id === product.id)
-            if (index !== -1) {
-                productList.value[index].auditStatus = batchAuditForm.result
-                productList.value[index].auditOpinion = batchAuditForm.opinion
+/* ---------- 2. 回显用 computed ---------- */
+const categoryCascaderValue = computed({
+    get() {
+        if (!searchForm.categoryId) return []
+        // 在树里找到 categoryId 对应的 [parentId, categoryId]
+        for (const p of categoryTree.value) {
+            if (p.children?.some(c => c.id === searchForm.categoryId)) {
+                return [p.id, searchForm.categoryId]
             }
-        })
+        }
+        return []
+    },
+    set() { /* 已在 @change 处理 */ }
+})
 
-        ElMessage.success(`成功${batchAuditForm.result === 'passed' ? '通过' : '驳回'}${selectedProducts.value.length}个商品`)
-        showBatchAuditDialog.value = false
+/* ---------- 3. 选中后的处理 ---------- */
+function onCategoryChange(val) {
+    // val 为 [parentId, childId] 或 null
+    searchForm.categoryId = val?.[1] ?? null
+}
 
-        // 清空选择
-        productTableRef.value.clearSelection()
-        selectedProducts.value = []
-    } catch (error) {
-        ElMessage.error('批量审核操作失败')
-        console.error(error)
+/* ---------- 4. 初始化时拉取分类树 ---------- */
+onMounted(async () => {
+    await buildCategoryTree()   // 先构建树
+    fetchProducts()             // 再拉列表
+})
+
+async function buildCategoryTree() {
+    const { data } = await request.get('/api/productCategory/listALL')
+    const map = {}
+    const tree = []
+    data.forEach(n => { map[n.id] = { ...n, children: [] } })
+    data.forEach(n => {
+        if (n.parentId == null) {
+            tree.push(map[n.id])
+        } else {
+            map[n.parentId]?.children.push(map[n.id])
+        }
+    })
+    categoryTree.value = tree
+}
+
+function fmtCategoryName(id) {
+    if (!id) return ''
+    for (const p of categoryTree.value) {
+        const hit = p.children.find(c => c.id === id)
+        if (hit) return hit.name
     }
+    return ''
 }
 
 // 监听选择事件
@@ -621,12 +501,13 @@ onMounted(() => {
 }
 
 .el-button--primary {
-    background: var(--orange-gradient-deep);
+    /* background: var(--orange-gradient-deep); */
     border: none;
 }
 
 .el-button--primary:hover {
-    background: var(--orange-gradient);
+    /* background: var(--orange-gradient); */
+    border: none;
 }
 
 .el-button--success {
@@ -637,5 +518,20 @@ onMounted(() => {
 .el-button--danger {
     background: linear-gradient(135deg, #f44336 0%, #ff5722 100%);
     border: none;
+}
+
+.sku-spec {
+    color: #303133;
+    font-weight: 500;
+}
+
+.sku-price {
+    color: #ff5000;
+    margin-left: 8px;
+}
+
+.sku-stock {
+    color: #909399;
+    margin-left: 8px;
 }
 </style>
