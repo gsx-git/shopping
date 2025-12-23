@@ -71,11 +71,21 @@
                 <el-form-item label="用户名" prop="username"><el-input v-model="registerForm.username" /></el-form-item>
                 <el-form-item label="手机号" prop="phone"><el-input v-model="registerForm.phone" /></el-form-item>
                 <el-form-item label="邮箱" prop="email"><el-input v-model="registerForm.email" /></el-form-item>
-                <el-form-item label="密码" prop="password"><el-input v-model="registerForm.password" type="password"
-                        show-password /></el-form-item>
-                <el-form-item label="确认密码" prop="confirmPassword"><el-input v-model="registerForm.confirmPassword"
-                        type="password" show-password /></el-form-item>
+                <el-form-item label="密码" prop="password">
+                    <el-input v-model="registerForm.password" type="password" show-password />
+                </el-form-item>
+                <el-form-item label="确认密码" prop="confirmPassword">
+                    <el-input v-model="registerForm.confirmPassword" type="password" show-password />
+                </el-form-item>
+                <el-form-item label="身份" prop="role">
+                    <el-radio-group v-model="registerForm.role">
+                        <el-radio :label="1">用户</el-radio>
+                        <el-radio :label="3">管理员</el-radio>
+                    </el-radio-group>
+                </el-form-item>
             </el-form>
+
+
             <template #footer>
                 <el-button @click="registerVisible = false">取消</el-button>
                 <el-button type="primary" @click="confirmRegister">注册</el-button>
@@ -115,6 +125,7 @@
                 <el-button type="primary" @click="confirmShopRegister">提交</el-button>
             </template>
         </el-dialog>
+
     </el-container>
 </template>
 
@@ -181,14 +192,32 @@ const showLogin = () => {
     loginVisible.value = true
 }
 const confirmLogin = () => {
-    if (!loginForm.phone || !loginForm.password) return ElMessage.warning('请填写完整')
+    if (!loginForm.phone || !loginForm.password) {
+        return ElMessage.warning('请填写完整')
+    }
     request.post('/api/user/login', loginForm)
         .then(res => {
             if (res.code === 200) {
+                const { data } = res
+                /* 1. 关键：先判断禁用状态  1-禁用  0-正常 */
+                if (data.status === 1) {
+                    ElMessage.error('账号已被禁用，请联系管理员！')
+                    return // 不再往下执行
+                }
+                /* 2. 正常账号才写缓存、跳转 */
                 ElMessage.success('登录成功')
-                localStorage.setItem('system-user', JSON.stringify(res.data))
-                location.reload()
-            } else ElMessage.error(res.msg || '登录失败')
+                localStorage.setItem('system-user', JSON.stringify(data))
+                const { role } = data
+                if (role === 3) {
+                    // 管理员
+                    location.href = '/admin'
+                } else {
+                    // 普通 / 店铺用户
+                    location.reload()
+                }
+            } else {
+                ElMessage.error(res.msg || '登录失败')
+            }
         })
         .catch(() => ElMessage.error('网络异常'))
 }
@@ -214,7 +243,8 @@ const registerForm = reactive({
     password: '',
     confirmPassword: '',
     avatar: '',
-    avatarFile: null
+    avatarFile: null,
+    role: 1
 })
 const beforeAvatar = rawFile => {
     const allow = ['image/jpeg', 'image/jpg', 'image/png']
@@ -311,16 +341,55 @@ const confirmShopRegister = async () => {
 
 /* ---------------- 我的店铺入口 ---------------- */
 const goShop = async () => {
-    if (!userInfo.value) return ElMessage.warning('请先登录'), loginVisible.value = true
+    if (!userInfo.value) {
+        ElMessage.warning('请先登录')
+        loginVisible.value = true
+        return
+    }
+
     const shop = await loadUserShop()
-    shop ? router.push('/shop') : (shopRegisterVisible.value = true)
+    if (shop) {
+        router.push('/shop')
+        return
+    }
+
+    /* 只有后端明确返回“暂无店铺”才弹开设弹窗，其余情况只提示 */
+    if (noShopFlag.value) {
+        shopRegisterVisible.value = true
+    }
 }
+
+/* 新增一个标记，用来区分“真的没店铺”还是“有店铺但状态不可用” */
+const noShopFlag = ref(false)
+
 const loadUserShop = async () => {
     if (!userInfo.value) return null
+    noShopFlag.value = false   // 每次重置
     try {
         const res = await request.get(`/api/shop/list/${userInfo.value.id}`)
-        if (res.code === 200 && res.data?.length) return res.data[0]
-        if (res.code === 400 && res.msg?.includes('暂无店铺')) return null
+
+        /* 明确没有店铺 */
+        if (res.code === 400 && res.msg?.includes('暂无店铺')) {
+            noShopFlag.value = true
+            return null
+        }
+
+        /* 有店铺 */
+        if (res.code === 200 && res.data?.length) {
+            const shop = res.data[0]
+
+            if (shop.status === 0) {
+                ElMessage.warning('您的店铺暂未通过审核，请耐心等待')
+                return null
+            }
+            if (shop.status === 2) {
+                ElMessage.warning('您的店铺已被冻结，如有疑问请联系客服')
+                return null
+            }
+            return shop   // status = 1 正常
+        }
+
+        /* 其他异常 */
         ElMessage.error(res.msg || '店铺信息加载失败')
     } catch {
         ElMessage.error('网络异常')
