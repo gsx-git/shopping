@@ -1,22 +1,27 @@
+<!-- AdminProfile.vue -->
 <template>
     <div class="profile-container">
-        <!-- 头部信息卡片 -->
+        <!-- 头部信息 -->
         <el-card class="profile-header">
             <div class="profile-avatar">
                 <el-avatar :size="80" :src="avatarUrl">
-                    <User />
+                    <el-icon>
+                        <User />
+                    </el-icon>
                 </el-avatar>
+
                 <div class="profile-info">
-                    <h2>{{ adminInfo?.username || '管理员' }}</h2>
+                    <h2>{{ admin.username || '管理员' }}</h2>
                     <p class="role">超级管理员</p>
                     <p class="join-time">
                         <el-icon>
                             <Calendar />
                         </el-icon>
-                        加入时间：{{ formatJoinTime() }}
+                        加入时间：{{ formatJoinTime(admin.createTime) }}
                     </p>
                 </div>
-                <el-button type="primary" @click="editProfile">
+
+                <el-button @click="startEdit">
                     <el-icon>
                         <Edit />
                     </el-icon>
@@ -25,82 +30,50 @@
             </div>
         </el-card>
 
-        <!-- 基础信息表单 -->
+        <!-- 基础信息 -->
         <el-card class="profile-form-card">
             <template #header>
-                <div class="card-header">
-                    <span>基础信息</span>
-                </div>
+                <span class="card-title">基础信息</span>
             </template>
-            <el-form :model="profileForm" label-width="100px" class="profile-form">
+
+            <el-form ref="formRef" :model="form" label-width="100" :disabled="!isEditing">
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="用户名" prop="username">
-                            <el-input v-model="profileForm.username" disabled />
+                        <el-form-item label="用户名">
+                            <el-input v-model="form.username" disabled />
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
                         <el-form-item label="手机号" prop="phone">
-                            <el-input v-model="profileForm.phone" :disabled="!isEditing" />
+                            <el-input v-model="form.phone" />
                         </el-form-item>
                     </el-col>
                 </el-row>
+
                 <el-row :gutter="20">
                     <el-col :span="12">
                         <el-form-item label="邮箱" prop="email">
-                            <el-input v-model="profileForm.email" :disabled="!isEditing" />
+                            <el-input v-model="form.email" />
                         </el-form-item>
                     </el-col>
-                    <!-- <el-col :span="12">
-                        <el-form-item label="所属部门" prop="department">
-                            <el-input v-model="profileForm.department" :disabled="!isEditing" />
-                        </el-form-item>
-                    </el-col> -->
                 </el-row>
-                <!-- <el-form-item label="个人简介" prop="intro">
-                    <el-input v-model="profileForm.intro" type="textarea" :rows="4" :disabled="!isEditing"
-                        placeholder="请输入个人简介" />
-                </el-form-item> -->
+
                 <el-form-item v-if="isEditing">
-                    <el-button type="primary" @click="saveProfile">保存修改</el-button>
-                    <el-button @click="cancelEdit">取消</el-button>
+                    <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
+                    <el-button @click="cancel">取消</el-button>
                 </el-form-item>
             </el-form>
         </el-card>
-
-        <!-- 密码修改卡片 -->
-        <!-- <el-card class="password-card" shadow="hover">
-            <template #header>
-                <div class="card-header">
-                    <span>修改密码</span>
-                </div>
-            </template>
-            <el-form :model="passwordForm" label-width="100px" class="password-form" @submit.prevent="changePassword">
-                <el-form-item label="原密码" prop="oldPassword" :rules="oldPwdRules">
-                    <el-input v-model="passwordForm.oldPassword" type="password" show-password />
-                </el-form-item>
-                <el-form-item label="新密码" prop="newPassword" :rules="newPwdRules">
-                    <el-input v-model="passwordForm.newPassword" type="password" show-password />
-                </el-form-item>
-                <el-form-item label="确认新密码" prop="confirmPassword" :rules="confirmPwdRules">
-                    <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="changePassword">修改密码</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card> -->
-
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Calendar, Edit } from '@element-plus/icons-vue'
 
-// 管理员信息
-const adminInfo = computed(() => {
+/* ---------- 数据 ---------- */
+const admin = computed(() => {
     try {
         return JSON.parse(localStorage.getItem('system-user') || '{}')
     } catch {
@@ -108,152 +81,80 @@ const adminInfo = computed(() => {
     }
 })
 
-// 头像地址
 const avatarUrl = computed(() =>
-    adminInfo.value.id
-        ? `${import.meta.env.VITE_BASE_URL}/api/user/${adminInfo.value.id}/avatar`
+    admin.value.id
+        ? `${import.meta.env.VITE_BASE_URL}/api/user/${admin.value.id}/avatar`
         : 'https://picsum.photos/100/100?random=admin'
 )
 
-// 编辑状态
+/* ---------- 表单 ---------- */
 const isEditing = ref(false)
+const saving = ref(false)
+const formRef = ref()
 
-// 个人资料表单
-const profileForm = ref({
-    username: '',
-    phone: '',
-    email: '',
-    department: '运营部',
-    intro: ''
+const form = reactive({
+    username: admin.value.username || '管理员',
+    phone: admin.value.phone || '',
+    email: admin.value.email || ''
 })
 
-// 密码修改表单
-const passwordForm = ref({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-})
-
-// 密码验证规则
-const oldPwdRules = [{ required: true, message: '请输入原密码', trigger: 'blur' }]
-const newPwdRules = [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
-]
-const confirmPwdRules = [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
-    {
-        validator: (rule, value, callback) => {
-            if (value !== passwordForm.value.newPassword) {
-                callback(new Error('两次输入的密码不一致'))
-            } else {
-                callback()
-            }
-        },
-        trigger: 'blur'
-    }
-]
-
-// 初始化表单数据
-onMounted(() => {
-    profileForm.value.username = adminInfo.value.username || '管理员'
-    profileForm.value.phone = adminInfo.value.phone || ''
-    profileForm.value.email = adminInfo.value.email || ''
-})
-
-// 格式化加入时间
-const formatJoinTime = () => {
-    console.log(adminInfo.value)
-    if (!adminInfo.value.createTime) return '2023-01-01'
-
-    // 从数组创建Date对象: [year, month, day, hour, minute, second, nanosecond]
-    const createTimeArray = adminInfo.value.createTime
-    if (Array.isArray(createTimeArray) && createTimeArray.length >= 7) {
-        // 注意：月份需要减1，因为JavaScript的月份是从0开始的
-        const date = new Date(
-            createTimeArray[0],      // 年
-            createTimeArray[1] - 1,  // 月（需要减1）
-            createTimeArray[2],      // 日
-            createTimeArray[3],      // 时
-            createTimeArray[4],      // 分
-            createTimeArray[5],      // 秒
-            Math.floor(createTimeArray[6] / 1000000) // 毫秒（纳秒转毫秒）
-        )
-
-        return date.toLocaleDateString()
-    }
-
-    return '2023-01-01'
+/* ---------- 方法 ---------- */
+function formatJoinTime(arr) {
+    if (!Array.isArray(arr) || arr.length < 7) return '2023-01-01'
+    const [y, m, d] = arr
+    return new Date(y, m - 1, d).toLocaleDateString()
 }
 
-// 编辑资料
-const editProfile = () => {
+function startEdit() {
     isEditing.value = true
 }
 
-// 取消编辑
-const cancelEdit = () => {
+function cancel() {
     isEditing.value = false
-    // 重置表单
-    profileForm.value.phone = adminInfo.value.phone || ''
-    profileForm.value.email = adminInfo.value.email || ''
+    // 还原
+    form.phone = admin.value.phone || ''
+    form.email = admin.value.email || ''
 }
 
-// 保存资料修改
-const saveProfile = () => {
-    // 模拟接口请求
-    ElMessageBox.confirm('确认保存修改吗？', '提示', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning'
-    }).then(async () => {
-        // 实际项目中调用保存接口
-        await new Promise(resolve => setTimeout(resolve, 800))
-        ElMessage.success('资料修改成功！')
-        isEditing.value = false
-        // 更新本地存储
-        const newInfo = { ...adminInfo.value, ...profileForm.value }
-        localStorage.setItem('system-user', JSON.stringify(newInfo))
-    }).catch(() => {
-        ElMessage.info('已取消保存')
+/* ---------- 新增：真正调用后端 ---------- */
+import axios from 'axios'
+import request from '@/utils/request'
+
+async function submit() {
+    await formRef.value.validate().catch(() => {
+        ElMessage.warning('请完善信息')
+        throw new Error('invalid')
     })
-}
 
-// 修改密码
-const changePassword = () => {
-    if (!passwordForm.value.oldPassword) {
-        ElMessage.warning('请输入原密码')
-        return
-    }
-    if (!passwordForm.value.newPassword) {
-        ElMessage.warning('请输入新密码')
-        return
-    }
-    if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-        ElMessage.error('两次输入的密码不一致')
-        return
-    }
+    await ElMessageBox.confirm('确认保存修改？', '提示', { type: 'warning' })
 
-    ElMessageBox.confirm('确认修改密码吗？', '警告', {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'error'
-    }).then(async () => {
-        // 模拟接口请求
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        ElMessage.success('密码修改成功，请重新登录')
-        // 清空密码表单
-        passwordForm.value = {
-            oldPassword: '',
-            newPassword: '',
-            confirmPassword: ''
+    saving.value = true
+    try {
+        // 1. 组装后端需要的 DTO
+        const dto = {
+            username: form.username,
+            phone: form.phone,
+            email: form.email,
+            password: admin.value.password,   // 原密码保持不变（如需改密可再开接口）
+            status: admin.value.status ?? 1
         }
-        // 实际项目中退出登录
-        // localStorage.removeItem('system-user')
-        // router.push('/login')
-    }).catch(() => {
-        ElMessage.info('已取消修改')
-    })
+
+        // 2. 调接口
+        const { data } = await request.post(`/api/user/update/${admin.value.id}`, dto)
+
+        // if (!data.success) throw new Error(data.message || '更新失败')
+
+        // 3. 更新本地缓存
+        const payload = { ...admin.value, ...form }
+        localStorage.setItem('system-user', JSON.stringify(payload))
+
+        ElMessage.success('资料已更新')
+        isEditing.value = false
+    } catch (e) {
+        ElMessage.error(e?.response?.data?.message || e.message || '更新失败')
+    } finally {
+        saving.value = false
+    }
 }
 </script>
 
@@ -275,11 +176,6 @@ const changePassword = () => {
     display: flex;
     align-items: center;
     gap: 20px;
-    flex-wrap: wrap;
-}
-
-.profile-info {
-    flex: 1;
 }
 
 .profile-info h2 {
@@ -294,55 +190,24 @@ const changePassword = () => {
     font-size: 14px;
 }
 
-.profile-info .join-time {
+.join-time {
     color: #999;
-    margin: 0;
     font-size: 12px;
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
-.profile-form-card,
-.password-card {
-    margin-bottom: 24px;
+.card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--orange-dark);
+}
+
+.profile-form-card {
     padding: 24px;
     border-radius: 12px;
     border: 1px solid var(--border-light);
     background: var(--bg-blur);
-}
-
-.card-header {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--orange-dark);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.profile-form,
-.password-form {
-    padding-top: 16px;
-}
-
-.el-form-item {
-    margin-bottom: 16px;
-}
-
-.el-button {
-    padding: 8px 16px;
-    border-radius: 8px;
-    background: var(--orange-gradient);
-    border: none;
-}
-
-.el-button--primary {
-    background: var(--orange-gradient-deep);
-}
-
-.el-button--primary:hover {
-    background: var(--orange-gradient);
 }
 </style>
