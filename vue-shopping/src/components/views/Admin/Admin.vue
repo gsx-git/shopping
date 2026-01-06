@@ -48,19 +48,20 @@
                         <el-menu-item index="/admin/shop">查看店铺</el-menu-item>
                     </el-sub-menu>
 
-                    <!-- <el-menu-item index="/admin/order">
-                        <el-icon>
-                            <Tickets />
-                        </el-icon>
-                        <span>订单管理</span>
-                    </el-menu-item> -->
-
                     <el-menu-item index="/admin/product">
                         <el-icon>
                             <Goods />
                         </el-icon>
                         <span>商品审核</span>
                     </el-menu-item>
+
+                    <el-menu-item index="/admin/banner">
+                        <el-icon>
+                            <Files />
+                        </el-icon>
+                        <span>轮播图管理</span>
+                    </el-menu-item>
+
                 </el-menu>
             </el-aside>
 
@@ -76,7 +77,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, User, Avatar, Tickets, Goods } from '@element-plus/icons-vue'
+import { ArrowDown, User, Avatar, Goods, Files } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
