@@ -199,12 +199,6 @@ const beforeUpload = raw => {
     }
     return true
 }
-const uploadImg = async ({ file }) => {
-    const fd = new FormData()
-    fd.append('file', file)
-    const { data } = await request.post('/api/upload', fd)
-    form.img = data.url || data
-}
 
 /* ===== 远程搜索商品 ===== */
 const productLoading = ref(false)
