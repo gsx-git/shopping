@@ -220,7 +220,7 @@ const loadData = async () => {
     if (!shopId.value) return
     loading.value = true
     try {
-        const res = await request.post(`/api/product/listByShop/${shopId.value}`, {
+        const res = await request.post(`/api/product/listByShopSelf/${shopId.value}`, {
             pageNum: pageNum.value,
             pageSize: pageSize.value,
             name: keyword.value || undefined
