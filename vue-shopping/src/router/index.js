@@ -9,7 +9,7 @@ const routes = [
     component: Layout,
     children: [
       { path: '', name: 'Home', component: () => import('@/components/views/Home.vue') },
-      { path: 'category/:id?', name: 'Category', component: () => import('@/components/views/Category.vue') },
+      { path: 'category/:id/:name', name: 'Category', component: () => import('@/components/views/Category.vue') },
       { path: 'cart', name: 'Cart', component: () => import('@/components/views/Cart.vue') },
       { path: 'search', name: 'Search', component: () => import('@/components/views/Search.vue') },
       { path: 'product/:id', name: 'ProductDetail', component: () => import('@/components/views/ProductDetail.vue') },
@@ -36,6 +36,7 @@ const routes = [
       { path: 'product', name: 'AdminProduct', component: () => import('@/components/views/Admin/Product.vue') },
       { path: 'shop', name: 'AdminShop', component: () => import('@/components/views/Admin/Shop.vue') },
       { path: 'user', name: 'AdminUser', component: () => import('@/components/views/Admin/User.vue') },
+       { path: 'banner', name: 'AdminBanner', component: () => import('@/components/views/Admin/Banner.vue') },
     ]
   }
 ]
