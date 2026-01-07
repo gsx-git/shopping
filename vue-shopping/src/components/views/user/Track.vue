@@ -2,6 +2,7 @@
   <el-main class="track-main">
     <!-- 浏览记录卡片 -->
     <el-card class="track-card">
+
       <template #header>
         <div class="track-header">
           <span>浏览记录</span>
@@ -11,30 +12,28 @@
           </el-button>
         </div>
       </template>
+
       <el-table :data="trackList" row-key="id" show-overflow-tooltip>
-        <el-table-column label="商品图片" width="120">
+        <el-table-column label="商品图片" width="120" >
           <template #default="{ row }">
             <img :src="row.img" class="track-img" @click="goDetail(row.id)" />
           </template>
         </el-table-column>
         <el-table-column label="商品名称" min-width="200">
           <template #default="{ row }">
-            <span @click="goDetail(row.id)">{{ row.title }}</span>
+            <span class="track-title" @click="goDetail(row.id)">{{ row.title }}</span>
           </template>
         </el-table-column>
         <el-table-column label="价格" width="120">
           <template #default="{ row }">¥{{ row.price }}</template>
         </el-table-column>
-        <!-- <el-table-column label="浏览时间" width="180">
-          <template #default="{ row }">{{ row.viewedAt }}</template>
-        </el-table-column> -->
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button type="text" @click="addCart(row.id)">加入购物车</el-button>
-            <el-button type="text" @click="removeTrack(row.id)">删除记录</el-button>
+            <el-button type="text" @click="removeTrack(row.historyId)">删除记录</el-button>
           </template>
         </el-table-column>
       </el-table>
+
     </el-card>
   </el-main>
 </template>
@@ -65,6 +64,7 @@ const fetchTrackList = async () => {
     // 后端返回：Result.suc(List<TrackProductDTO>)
     trackList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
       id: item.productId,
+      historyId: item.historyId,
       title: item.productName,
       price: item.productPrice,
       img: item.image
@@ -77,17 +77,11 @@ const fetchTrackList = async () => {
   }
 }
 
-/* 加入购物车 */
-const addCart = (id) => {
-  /* 调你现成的加购接口 */
-  ElMessage.success(`商品${id} 已加入购物车`)
-}
-
 /* 删除浏览记录 */
-const removeTrack = async (id) => {
+const removeTrack = async (historyId) => {
   try {
     // 根据实际接口调整
-    await request.delete(`/api/track/${id}`)
+    await request.delete(`/api/userHistory/delete/${historyId}`)
     ElMessage.success('浏览记录已删除')
     // 重新拉列表
     await fetchTrackList()
@@ -106,7 +100,6 @@ onMounted(fetchTrackList)
 <style scoped>
 .track-main {
   background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
   padding: 20px;
 }
 
@@ -120,16 +113,21 @@ onMounted(fetchTrackList)
 }
 
 .track-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex;  /* 垂直居中 */
+  justify-content: space-between; /* 水平居右 */
+  align-items: center;  /* 垂直居中 */
 }
 
 .track-img {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   cursor: pointer;
+}
+
+.track-title {
+  cursor: pointer;
+  color: #409eff;
 }
 
 .track-img:hover {

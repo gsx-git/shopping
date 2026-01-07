@@ -1,170 +1,143 @@
 <template>
-  <el-main class="order-detail-main">
-    <!-- 订单详情卡片 -->
-    <el-card class="order-card">
-      <template #header>
-        <div class="order-header">
-          <span>订单详情</span>
-          <el-button type="text" @click="goBack" class="back-button">
-            返回 <i class="el-icon-arrow-left"></i>
-          </el-button>
-        </div>
-      </template>
-      <el-table :data="orderList" row-key="id" show-overflow-tooltip>
-        <el-table-column label="订单编号" width="180">
-          <template #default="{ row }">{{ row.orderNumber }}</template>
-        </el-table-column>
-        <el-table-column label="订单状态" width="120">
-          <template #default="{ row }">{{ row.status }}</template>
-        </el-table-column>
-        <el-table-column label="下单时间" width="120">
-          <template #default="{ row }">{{ row.date }}</template>
-        </el-table-column>
-        <el-table-column label="商品" min-width="220">
-          <template #default="{ row }">
-            <div class="goods-box">
-              <img :src="row.img" class="goods-img" />
-              <div class="goods-title">{{ row.title }}</div>
+    <el-main class="order-detail-main">
+        <el-card>
+            <template #header>
+                <div class="header">
+                    <span>订单详情</span>
+                    <el-button type="text" @click="goBack" class="back-button">
+                        返回 <i class="el-icon-arrow-left"></i>
+                    </el-button>
+                </div>
+            </template>
+
+            <!-- 骨架 -->
+            <el-skeleton v-if="loading" :rows="6" animated />
+
+            <!-- 内容 -->
+            <div v-else>
+                <!-- 商品图片 -->
+                <!-- <div class="mt20">
+                    <div class="sub-title">商品图片</div>
+                    <img :src="order.img" alt="商品图" class="goods-img" />
+                </div> -->
+                <!-- 订单基本信息 -->
+                <el-descriptions title="基本信息" :column="2">
+                    <el-descriptions-item label="订单编号">{{ order.id }}</el-descriptions-item>
+                    <el-descriptions-item label="订单状态">
+                        <el-tag :type="statusColor(order.status)">{{ order.status }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="下单时间">{{ formatTime(order.createTime) }}</el-descriptions-item>
+                    <el-descriptions-item label="支付时间">{{ formatTime(order.payTime) }}</el-descriptions-item>
+                    <el-descriptions-item label="发货时间">{{ formatTime(order.deliverTime) }}</el-descriptions-item>
+                    <el-descriptions-item label="收货时间">{{ formatTime(order.receiveTime) }}</el-descriptions-item>
+                    <el-descriptions-item label="商品名称">{{ order.productName }}</el-descriptions-item>
+                    <el-descriptions-item label="商品规格">{{ fmtSpecs(order.sku.specs) }}</el-descriptions-item>
+                    <el-descriptions-item label="单价">¥{{ order.price }}</el-descriptions-item>
+                    <el-descriptions-item label="数量">{{ order.quantity }}</el-descriptions-item>
+                    <el-descriptions-item label="总金额">¥{{ order.totalAmount }}</el-descriptions-item>
+                    <el-descriptions-item label="实付金额">
+                        <strong style="color:#ff5000">¥{{ order.payAmount }}</strong>
+                    </el-descriptions-item>
+                </el-descriptions>
+
+                <!-- 收货地址 -->
+                <el-descriptions title="收货地址" :column="1" class="mt20">
+                    <el-descriptions-item label="收件人">{{ address.receiver }}</el-descriptions-item>
+                    <el-descriptions-item label="手机号">{{ address.phone }}</el-descriptions-item>
+                    <el-descriptions-item label="地址">
+                        {{ address.province }}{{ address.city }}{{ address.detailAddress }}
+                    </el-descriptions-item>
+                </el-descriptions>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="单价" width="100">
-          <template #default="{ row }">¥{{ row.price }}</template>
-        </el-table-column>
-        <el-table-column label="数量" width="100">
-          <template #default="{ row }">{{ row.num }}</template>
-        </el-table-column>
-        <el-table-column label="小计" width="100">
-          <template #default="{ row }">¥{{ (row.price * row.num).toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template #default>
-            <el-button type="text" @click="goBack">取消订单</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div class="order-total">
-        <div class="total">合计：<strong>¥{{ totalPrice }}</strong></div>
-      </div>
-    </el-card>
-  </el-main>
+        </el-card>
+    </el-main>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { computed } from 'vue'
 import request from '@/utils/request'
 
 const route = useRoute()
+console.log(route)
 const router = useRouter()
 const loading = ref(true)
-const orderList = ref([])
-const targetStatus = Number(route.params.id)
-console.log('当前 订单状态码:', targetStatus);
-const statusMap = { 1: '待付款', 2: '待发货', 3: '待收货', 4: '已完成' }
-/* 根据 user.id 拉取订单 */
-const fetchOrders = async () => {
-  try {
-    const raw = localStorage.getItem('system-user')
-    const user = raw ? JSON.parse(raw) : null
-    console.log('当前 订单页user:', user);
-    if (!user || !user.id) {
-      ElMessage.warning('请先登录')
-      return
+const order = ref({})
+const address = ref({})
+
+const statusMap = { 1: '待付款', 2: '待发货', 3: '待收货', 4: '已完成', 5: '已取消' }
+const statusColor = st => ({ 待付款: 'warning', 待发货: 'primary', 待收货: 'info', 已完成: 'success', 已取消: 'danger' }[st])
+
+const formatTime = arr => arr ? arr.slice(0, 3).join('-') + ' ' + arr.slice(3, 6).join(':') : '-'
+
+const goBack = () => router.back()
+
+const fetchDetail = async () => {
+    const id = route.params.orderId
+    if (!id) {
+        ElMessage.error('缺少订单号')
+        return
     }
-    // 示例：GET /api/orders?userId=xxx
-    const { data } = await request.get(`/api/order/list1/${user.id}`)
-    // orderList.value = data.data ?? []   // 按后端实际字段调整
-    orderList.value = (Array.isArray(data) ? data : data.data ?? []).map(item => ({
-      id: item.id,
-      orderNumber: item.id, // 如果没有订单号，用 id 代替
-      statusNumber: item.status,
-      status: statusMap[item.status] ?? '未知状态',
-      date: item.createTime.slice(0, 3).join('-'), // 取年月日
-      img: `data:image/png;base64,${item.productImage}`, // base64 图片
-      title: item.productName,
-      price: item.price,
-      num: item.quantity
-    }))
-    .filter(item => targetStatus != 0 ? item.statusNumber === targetStatus : true)
-    console.log('当前 orderList.value:', orderList.value);
-  } catch (e) {
-    ElMessage.error('获取订单失败')
-  } finally {
-    loading.value = false
-  }
+    try {
+        // 后端返回的就是单笔订单，无需再 list.find
+        const { data } = await request.get(`/api/order/listDetails/${id}`)
+        const dto = data.data ?? data          // 兼容 Result 包装
+        order.value = {
+            ...dto,
+            img: `data:image/png;base64,${dto.productImage || ''}`,
+            status: statusMap[dto.status] || '未知'
+        }
+        address.value = dto.address ?? {}
+    } catch (e) {
+        ElMessage.error('获取订单详情失败')
+    } finally {
+        loading.value = false
+    }
 }
 
-const totalPrice = computed(() =>
-  orderList.value.reduce((sum, item) => sum + item.price * item.num, 0).toFixed(2)
-)
-/* 小工具：状态颜色 */
-const statusColor = st => {
-  const map = { 待付款: 'warning', 待发货: '', 待收货: 'info', 已完成: 'success', 已取消: 'danger' }
-  return map[st] ?? 'info'
+/* 格式化规格JSON */
+const fmtSpecs = (str) => {
+    try {
+        const obj = JSON.parse(str)
+        return Object.values(obj).join(' · ')
+    } catch { return str }
 }
 
-onMounted(fetchOrders)
-const goBack = () => {
-  router.back()
-}
+onMounted(fetchDetail)
 </script>
 
 <style scoped>
 .order-detail-main {
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
-  padding: 20px;
+    background-color: #f5f5f5;
+    padding: 20px;
 }
 
-.order-card {
-  margin-bottom: 20px;
-}
-
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .back-button {
-  color: #ff5000;
-  font-size: 14px;
+    color: #ff5000;
+    font-size: 14px;
 }
 
-.goods-box {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.mt20 {
+    margin-top: 20px;
+}
+
+.sub-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
 }
 
 .goods-img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.goods-title {
-  font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.order-total {
-  margin-top: 20px;
-  text-align: right;
-}
-
-.total {
-  font-size: 16px;
-  color: #ff5000;
-}
-
-.total strong {
-  font-size: 20px;
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
 }
 </style>

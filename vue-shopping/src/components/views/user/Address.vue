@@ -22,7 +22,10 @@
           <template #default="{ row }">{{ row.phone }}</template>
         </el-table-column>
         <el-table-column label="地址" min-width="220">
-          <template #default="{ row }">{{ row.address }}</template>
+          <template #default="{ row }">
+            <span v-if="row.isDefault" style="color:#ff5000;margin-right:4px">[默认]</span>
+            {{ row.address }}
+          </template>
         </el-table-column>
         <el-table-column label="操作" width="120">
           <template #default="{ row }">
@@ -69,6 +72,10 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-form-item label="设为默认">
+          <el-switch v-model="addressForm.isDefault" active-color="#ff5000" :active-value="true"
+            :inactive-value="false" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="addressDialogVisible = false">取消</el-button>
@@ -90,6 +97,7 @@ const router = useRouter()
 /* 响应式数据 */
 const loading = ref(true)
 const addresses = ref([])
+const rawList = ref([])
 
 /* 弹窗数据 */
 const addressDialogVisible = ref(false)
@@ -117,7 +125,8 @@ const fetchAddresses = async () => {
 
     const { data } = await request.get(`/api/useraddress/list/${user.id}`)
     console.log('data 结构', data)
-    console.log('data.data 是啥', data.data)
+    // 先存原始数据
+    rawList.value = Array.isArray(data) ? data : data.data ?? []
     // 拼地址 + 默认置顶
     addresses.value = (Array.isArray(data) ? data : data.data ?? [])
       .map(item => ({
@@ -141,14 +150,15 @@ const fetchAddresses = async () => {
 const openAddressDialog = (mode, row = null) => {
   dialogMode.value = mode
   if (mode === 'edit' && row) {
-    // 把拼好的地址拆回去
+    const raw = rawList.value.find(r => r.id === row.id) || {}
     addressForm.value = {
       id: row.id,
       receiver: row.receiver,
       phone: row.phone,
-      province: row.province,
-      city: row.city,
-      detailAddress: row.detailAddress
+      province: raw.province || '',
+      city: raw.city || '',
+      detailAddress: raw.detailAddress || '',
+      isDefault: row.isDefault
     }
     dialogTitle.value = '修改地址'
   } else {
@@ -158,7 +168,8 @@ const openAddressDialog = (mode, row = null) => {
       phone: '',
       province: '',
       city: '',
-      detailAddress: ''
+      detailAddress: '',
+      isDefault: false
     }
     dialogTitle.value = '新增地址'
   }
@@ -182,7 +193,7 @@ const saveOrUpdateAddress = async () => {
     province,
     city,
     detailAddress,
-    isDefault: false   // 如有需要可放开默认值开关
+    isDefault: addressForm.value.isDefault
   }
 
   try {
@@ -222,7 +233,6 @@ onMounted(fetchAddresses)
 <style scoped>
 .address-main {
   background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
   padding: 20px;
 }
 

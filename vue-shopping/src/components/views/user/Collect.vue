@@ -19,7 +19,7 @@
         </el-table-column>
         <el-table-column label="商品名称" min-width="200">
           <template #default="{ row }">
-            <span @click="goDetail(row.productId)">{{ row.title }}</span>
+            <span class="collect-title" @click="goDetail(row.productId)">{{ row.title }}</span>
           </template>
         </el-table-column>
         <el-table-column label="价格" width="120">
@@ -27,7 +27,6 @@
         </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button type="text" @click="addCart(row.id)">加入购物车</el-button>
             <el-button type="text" @click="removeCollect(row.id)">取消收藏</el-button>
           </template>
         </el-table-column>
@@ -74,12 +73,6 @@ const fetchCollectList = async () => {
   }
 }
 
-/* 加入购物车 */
-const addCart = (id) => {
-  /* 这里调你现成的加购接口即可 */
-  ElMessage.success(`商品${id} 已加入购物车`)
-}
-
 /* 取消收藏 */
 const removeCollect = async (id) => {
   try {
@@ -101,7 +94,6 @@ onMounted(fetchCollectList)
 <style scoped>
 .collect-main {
   background-color: #f5f5f5;
-  min-height: calc(100vh - 60px);
   padding: 20px;
 }
 
@@ -121,10 +113,15 @@ onMounted(fetchCollectList)
 }
 
 .collect-img {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
   cursor: pointer;
+}
+
+.collect-title {
+  cursor: pointer;
+  color: #409eff;
 }
 
 .collect-img:hover {

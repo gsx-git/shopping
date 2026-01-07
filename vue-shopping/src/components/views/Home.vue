@@ -1,229 +1,358 @@
 <template>
-  <!-- 主体 -->
-  <el-main>
-    <!-- 轮播 -->
-    <el-carousel height="400px" indicator-position="outside">
-      <el-carousel-item v-for="(src, idx) in banners" :key="idx">
-        <img :src="src" class="banner-img" />
-      </el-carousel-item>
-    </el-carousel>
-
-    <!-- 分类 -->
-    <el-row justify="center" class="category-row" :gutter="20">
-      <el-col v-for="c in categories" :key="c.id" :span="4">
-        <el-card shadow="hover" :body-style="{ padding: '20px', textAlign: 'center' }" @click="goCategory(c.name)">
-          <img :src="c.icon" class="category-icon" />
-          <div>{{ c.name }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 限时秒杀 -->
-    <el-card class="section-card">
-      <template #header>
-        <div class="card-header">
-          <span>⚡ 限时秒杀</span>
-          <span class="count-down">距结束 {{ countDown }}</span>
+    <div class="homeContainer">
+        <div class="carousel-margin">
+            <div class="type-sidebar">
+                <div v-for="(item, index) in types" :key="index" class="type-item"
+                    @click="goPage('category/' + item.id + '/' + item.name)">
+                    <span>{{ item.name }}</span>
+                    <el-icon class="category-icon">
+                        <ArrowRight />
+                    </el-icon>
+                </div>
+            </div>
+            <div class="carousel-container">
+                <el-carousel height="400px" :interval="3000">
+                    <el-carousel-item v-for="item in carousels" :key="item.id">
+                        <img :src="item.image" class="carousel-img" @click="goPage('/product/' + item.productId)"
+                            style="cursor: pointer" alt="轮播图" />
+                    </el-carousel-item>
+                </el-carousel>
+            </div>
         </div>
-      </template>
-      <el-row :gutter="20">
-        <el-col v-for="p in seckillList" :key="p.id" :span="6">
-          <el-card shadow="hover" :body-style="{ padding: 0 }" @click="goDetail(p.id)">
-            <img :src="p.img" class="goods-img" />
-            <div class="goods-info">
-              <div class="title">{{ p.title }}</div>
-              <div class="price">
-                <span class="now">¥{{ p.price }}</span>
-                <s class="old">¥{{ p.originPrice }}</s>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </el-card>
 
-    <!-- 猜你喜欢 -->
-    <el-card class="section-card">
-      <template #header>💡 猜你喜欢</template>
-      <el-row :gutter="20">
-        <el-col v-for="p in guessList" :key="p.id" :span="6">
-          <el-card shadow="hover" :body-style="{ padding: 0 }" @click="goDetail(p.id)">
-            <img :src="p.img" class="goods-img" />
-            <div class="goods-info">
-              <div class="title">{{ p.title }}</div>
-              <div class="price">
-                <span class="now">¥{{ p.price }}</span>
-              </div>
+        <!-- 新品上架部分 -->
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-title">
+                    <h1>新品上架</h1>
+                </div>
+                <div>
+                    <el-link href="/front/goods" :underline="false">查看更多>></el-link>
+                </div>
             </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </el-card>
-  </el-main>
+            <div class="goods-list">
+                <el-row :gutter="20">
+                    <el-col :span="6" v-for="(item, index) in timeGoods" :key="index" class="goods-col">
+                        <el-card :body-style="{ padding: '0px' }" class="card-item" @click="goGoodsDetail(item)">
+                            <img :src="item.image" alt="商品图片" class="goods-img">
+                            <div class="goods-info">
+                                <div class="goods-name">
+                                    {{ item.name }}
+                                </div>
+                                <div class="goods-descr">
+                                    {{ item.descr }}
+                                </div>
+                                <div class="goods-footer">
+                                    <div class="goods-price">
+                                        ￥{{ item.price }}
+                                    </div>
+                                    <div class="goods-sales">
+                                        累计热销：{{ item.sales }}
+                                    </div>
+                                </div>
+                            </div>
+                        </el-card>
+                    </el-col>
+                </el-row>
+            </div>
+        </div>
 
-  <!-- 页脚 -->
-  <el-footer class="footer">
-    © 2025 超级商城 | 让购物更简单
-  </el-footer>
+        <!-- 热销商品部分 -->
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-title">
+                    <h1>热销商品</h1>
+                </div>
+                <div>
+                    <el-link href="/front/goods" :underline="false">查看更多>></el-link>
+                </div>
+            </div>
+            <div class="goods-list">
+                <el-row :gutter="20">
+                    <el-col :span="6" v-for="(item, index) in salesGoods" :key="index" class="goods-col">
+                        <el-card :body-style="{ padding: '0px' }" class="card-item" @click="goGoodsDetail(item)">
+                            <img :src="item.image" alt="商品图片" class="goods-img">
+                            <div class="goods-info">
+                                <div class="goods-name">
+                                    {{ item.name }}
+                                </div>
+                                <div class="goods-descr">
+                                    {{ item.descr }}
+                                </div>
+                                <div class="goods-footer">
+                                    <div class="goods-price">
+                                        ￥{{ item.price }}
+                                    </div>
+                                    <div class="goods-sales">
+                                        累计热销：{{ item.sales }}
+                                    </div>
+                                </div>
+                            </div>
+                        </el-card>
+                    </el-col>
+                </el-row>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
-/* 轮播图 */
-const banners = ref([
-  'https://picsum.photos/1440/400?random=1',
-  'https://picsum.photos/1440/400?random=2',
-  'https://picsum.photos/1440/400?random=3'
-])
+// 响应式数据
+const carousels = ref([])
+const types = ref([])
+const timeGoods = ref([])
+const salesGoods = ref([])
 
-/* 分类 */
-const categories = ref([
-  { id: 1, name: '数码', icon: 'https://picsum.photos/120/120?random=4' },
-  { id: 2, name: '服饰', icon: 'https://picsum.photos/120/120?random=5' },
-  { id: 3, name: '食品', icon: 'https://picsum.photos/120/120?random=6' },
-  { id: 4, name: '家居', icon: 'https://picsum.photos/120/120?random=7' },
-  { id: 5, name: '美妆', icon: 'https://picsum.photos/120/120?random=8' },
-  { id: 6, name: '运动', icon: 'https://picsum.photos/120/120?random=9' }
-])
-const goCategory = name => {
-  router.push(`/category/${name}`)
-}
-
-/* 秒杀倒计时 */
-const seckillEnd = ref(Date.now() + 1000 * 60 * 60 * 2)
-const countDown = ref('')
-let timer = null
-const updateTime = () => {
-  const diff = Math.max(0, Math.floor((seckillEnd.value - Date.now()) / 1000))
-  const h = String(Math.floor(diff / 3600)).padStart(2, '0')
-  const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0')
-  const s = String(diff % 60).padStart(2, '0')
-  countDown.value = `${h}:${m}:${s}`
-}
+// 生命周期钩子
 onMounted(() => {
-  updateTime()
-  timer = setInterval(updateTime, 1000)
+    loadType()
+    loadCarousel()
+    loadTimeGoods()
+    loadSaleGoods()
 })
-onUnmounted(() => clearInterval(timer))
 
-/* 秒杀商品 */
-const seckillList = ref(
-  Array.from({ length: 4 }, (_, i) => ({
-    id: `s-${i}`,
-    title: `秒杀商品-${i + 1}`,
-    price: (99 + i * 10).toFixed(2),
-    originPrice: (199 + i * 20).toFixed(2),
-    img: `https://picsum.photos/300/300?random=${Date.now() + 10 + i}`
-  }))
-)
-
-/* 猜你喜欢 */
-const guessList = ref(
-  Array.from({ length: 8 }, (_, i) => ({
-    id: `g-${i}`,
-    title: `热门好物-${i + 1}`,
-    price: (199 + i * 30).toFixed(2),
-    img: `https://picsum.photos/300/300?random=${Date.now() + 20 + i}`
-  }))
-)
-
-/* 跳转到商品详情页 */
-const goDetail = (id) => {
-  router.push(`/product/${id}`)
+// 方法定义
+const loadCarousel = async () => {
+    try {
+        const res = await request.get('/api/carousel/listAll')
+        carousels.value = (res.data || []).map(item => ({
+            ...item,
+            image: item.image.startsWith('data:') ? item.image : `data:image/png;base64,${item.image}`
+        }))
+    } catch (error) {
+        console.error('加载轮播图失败:', error)
+        ElMessage.error('加载轮播图失败')
+    }
 }
+
+const loadType = async () => {
+    try {
+        const { data } = await request.get('/api/productCategory/listALL')
+        console.log(data)
+        const map = {}                        // id → node
+        const tree = []
+        data.forEach(n => { map[n.id] = { ...n, children: [] } })
+        data.forEach(n => {
+            if (n.parentId == null) {           // 根节点
+                tree.push(map[n.id])
+            } else {                            // 子节点
+                map[n.parentId]?.children.push(map[n.id])
+            }
+        })
+        console.log(tree)
+        types.value = tree
+        console.log(types.value)
+    } catch (error) {
+        console.error('加载分类失败:', error)
+        ElMessage.error('加载分类失败')
+    }
+}
+
+const loadTimeGoods = async () => {
+    try {
+        const res = await request.get('/api/product/latest-four')
+        timeGoods.value = (res.data || []).map(item => ({
+            ...item,
+            image: item.productImg.startsWith('data:') ? item.productImg : `data:image/png;base64,${item.productImg}`
+        }))
+    } catch (error) {
+        console.error('加载新品失败:', error)
+        ElMessage.error('加载新品失败')
+    }
+}
+
+const loadSaleGoods = async () => {
+    try {
+        const res = await request.get('/api/product/top-sales-four')
+        salesGoods.value = (res.data || []).map(item => ({
+            ...item,
+            image: item.productImg.startsWith('data:') ? item.productImg : `data:image/png;base64,${item.productImg}`
+        }))
+    } catch (error) {
+        console.error('加载热销商品失败:', error)
+        ElMessage.error('加载热销商品失败')
+    }
+}
+
+const goPage = (url) => { router.push(url) }
+
+const goGoodsDetail = (item) => { router.push(`/product/${item.id}`) }
 </script>
 
 <style scoped>
-.banner-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.homeContainer {
+    width: 70%;
+    margin: 0 auto;
+    min-height: 90vh;
 }
 
-.category-row {
-  margin: 40px 0;
+.carousel-margin {
+    margin: 10px 0;
+    display: flex;
+    gap: 20px;
 }
 
-.category-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
+.type-sidebar {
+    flex: 2;
+    background-color: #606266;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    height: 400px;
 }
 
-.section-card {
-  margin-bottom: 40px;
+.carousel-container {
+    flex: 8;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.carousel-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.count-down {
-  font-size: 14px;
-  color: #ff5000;
-  font-weight: bold;
+.type-item {
+    padding: 0 30px;
+    margin: 10px 0;
+    height: 25px;
+    line-height: 33px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.type-item:hover {
+    background-color: #ff6700;
+}
+
+.section-container {
+    margin-top: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    border-left: 5px solid #ff6700;
+    padding-left: 7px;
+    color: #303133;
+    font-size: 12px;
+}
+
+.section-title h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.goods-list {
+    margin-top: 20px;
+}
+
+.goods-col {
+    margin-top: 10px;
+}
+
+.card-item {
+    transition: transform 0.3s ease;
+    height: 100%;
+}
+
+.card-item:hover {
+    cursor: pointer;
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .goods-img {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
 }
 
 .goods-info {
-  padding: 12px;
-  text-align: center;
+    padding: 10px;
 }
 
-.title {
-  font-size: 14px;
-  margin-bottom: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.goods-name {
+    margin-top: 3px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #303133;
+    line-height: 1.4;
 }
 
-.price {
-  margin-bottom: 10px;
+.goods-descr {
+    margin-top: 5px;
+    font-size: 11px;
+    color: #909399;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
 }
 
-.now {
-  color: #ff5000;
-  font-size: 16px;
-  margin-right: 8px;
+.goods-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
 }
 
-.old {
-  font-size: 12px;
-  color: #999;
+.goods-price {
+    font-size: 20px;
+    color: #FFA500;
+    font-weight: 600;
 }
 
-.footer {
-  text-align: center;
-  font-size: 14px;
-  color: #999;
+.goods-sales {
+    font-size: 11px;
+    color: #909399;
 }
 
-/* 追加样式，保持 Logo 和菜单各自宽度，中间自动填满并居中 */
-.nav-header {
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .06);
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .homeContainer {
+        width: 85%;
+    }
 }
 
-.logo {
-  font-size: 24px;
-  font-weight: bold;
-  color: #ff5000;
-  flex-shrink: 0;
-  /* 不让 Logo 被压缩 */
+@media (max-width: 768px) {
+    .homeContainer {
+        width: 95%;
+    }
+
+    .carousel-margin {
+        flex-direction: column;
+    }
+
+    .type-sidebar,
+    .carousel-container {
+        flex: none;
+        width: 100%;
+    }
+
+    .goods-col {
+        span: 12;
+    }
+
+    .section-title h1 {
+        font-size: 20px;
+    }
 }
 </style>
